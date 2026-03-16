@@ -1,0 +1,48 @@
+# UCNtau Simulation config (config.yaml)
+
+# --- 1. simulation control ---
+simulation:
+  dt: 0.001
+  ntraj: 1000
+  seed: 1
+
+# --- 2. simulation specs ---
+components:
+  source_type: "pentrack" # neutron generation source: pentrack or random
+  field_model: "trap" # magnetic field model: trap or planar
+  integrator: "symplectic"
+  tracker: "production" # tracking logic: production, cleaning, lyap
+  writer: "csv"
+  dagger_mode: "Fast" # dagger acceptance geometry: fast, slow, segmented
+
+# --- 3. file path and IO ---
+io:
+  neutron_init_file: "neutrons_init.out"
+  x_trace_file: "xvals.bin"
+  y_trace_file: "yvals.bin"
+  z_trace_file: "zvals.bin"
+  output_prefix: "results/run"
+
+# --- 4. experiment parameters ---
+experiment:
+  cleaning_time: 50.0 # s
+  cleaning_height: 0.38 # m
+  raised_cleaning_height: 0.43 # m
+  hold_time: 20.0 # first dip time
+
+# --- 5. dagger movement ---
+dagger_motion:
+  dip_heights: [0.49, 0.01]
+  rel_dip_end_times: [0, 250] # after hold time
+
+# --- 6. core physics parameters ---
+physics:
+  ecut: 7.2092
+  epow: 1.17727
+  eclean: 5.571749397933261e-27
+  thetapow: 0.275457
+  zetacut: 0.0127203
+  bthick: 5.59909
+  defect: 0.00007
+  heat_mult: 1.0
+  wall_loss_prob: 0.0003

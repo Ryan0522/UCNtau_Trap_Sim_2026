@@ -45,4 +45,6 @@ struct SimulationConfig {
     double wall_loss_prob = 3.0e-4; // Al absorption probability
 };
 
+SimulationConfig load_config(const std::string& path);
+
 } // namespace ucntrap
