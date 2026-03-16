@@ -6,7 +6,7 @@ namespace ucntrap {
 
 class TrapHalbachField final : public FieldModel {
 public:
-    TrapHalbachField(double b_rem, double heat_mult,
+    TrapHalbachField(double heat_mult,
                      const std::vector<double>& tx,
                      const std::vector<double>& ty,
                      const std::vector<double>& tz);
@@ -15,7 +15,8 @@ public:
     double potential(const State& s, double t) const override;
 
 private:
-    double b_rem_, heat_mult_;
+    double heat_mult_;
+    
     const std::vector<double>& tx_, ty_, tz_;
 
     void get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const;

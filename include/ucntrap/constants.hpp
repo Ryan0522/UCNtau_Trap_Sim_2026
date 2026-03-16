@@ -22,9 +22,11 @@ inline constexpr double kPScale = 1.25e-27;
 // --- 3. UCNtau Apparatus ---
 namespace trap {
     // Halbach Array Parameters
+
     inline constexpr double kMagSpace  = 0.05114;
     inline constexpr double kMagThick  = 0.0254;
     inline constexpr double kKappa     = 1000.0;
+    inline constexpr double kBRem      = 1.35;
     inline constexpr double kBHold     = 0.005;
     inline constexpr int    kNSumTerms = 3;
 

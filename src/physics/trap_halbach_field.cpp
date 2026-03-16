@@ -5,11 +5,13 @@
 
 namespace ucntrap {
 
-TrapHalbachField::TrapHalbachField(double b_rem, double heat_mult,
+namespace ct = constants::trap;
+
+TrapHalbachField::TrapHalbachField(double heat_mult,
                      const std::vector<double>& tx,
                      const std::vector<double>& ty,
                      const std::vector<double>& tz)
-    : b_rem_(b_rem), heat_mult_(heat_mult), tx_(tx), ty_(ty), tz_(tz) {}
+    : heat_mult_(heat_mult), tx_(tx), ty_(ty), tz_(tz) {}
 
 void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const {
     
@@ -20,10 +22,9 @@ void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, d
         return;
     }
     
-    constexpr double SAMPDT = 0.0004;
     int num = tx_.size();
-    int iLowRaw = static_cast<int>(t / SAMPDT);
-    double frac = (t - iLowRaw * SAMPDT) / SAMPDT;
+    int iLowRaw = static_cast<int>(t / ct::kSampleDt);
+    double frac = (t - iLowRaw * ct::kSampleDt) / ct::kSampleDt;
 
     int iLow = (iLowRaw % num + num) % num;
     int iHi  = ((iLowRaw + 1) % num + num) % num;
@@ -37,19 +38,14 @@ Force TrapHalbachField::force(const State& s, double t) const {
     double x, y, z;
     get_shifted_coords(s, t, x, y, z);
 
-    constexpr double MAG_SPACE = 0.05114;
-    constexpr double MAG_THICK = 0.0254;
-    constexpr double B_HOLD = 0.005;
-    constexpr int N_TERMS = 3;
+    double A = 4.0 * ct::kBRem / (constants::kPi * std::sqrt(2.0));
 
-    double A = 4.0 * b_rem_ / (constants::kPi * std::sqrt(2.0));
-
-    const double expkx = std::exp(-constants::trap::kKappa * x);
+    const double expkx = std::exp(-ct::kKappa * x);
     const double inv = 1.0 / (1.0 + expkx);
 
     const double R = 0.5 + 0.5 * inv;
     const double r = 1.0 - 0.5 * inv;
-    const double Rprime = 0.5 * constants::trap::kKappa * (1.0 - inv) * inv;
+    const double Rprime = 0.5 * ct::kKappa * (1.0 - inv) * inv;
     const double rprime = -Rprime;
 
     const double rho = std::sqrt(y * y + z * z);
@@ -69,13 +65,13 @@ Force TrapHalbachField::force(const State& s, double t) const {
         double sum_k_cos = 0.0;
         double sum_k_sin = 0.0;
 
-        for (int n = 1; n <= N_TERMS; ++n) {
+        for (int n = 1; n <= ct::kNSumTerms; ++n) {
             const double odd = 4.0 * n - 3.0;
-            const double k_n = 2.0 * constants::kPi * odd / MAG_SPACE;
+            const double k_n = 2.0 * constants::kPi * odd / ct::kMagSpace;
             const double sign = (n % 2 == 0) ? 1.0 : -1.0;
 
             const double amp = sign / odd
-                             * (1.0 - std::exp(-k_n * MAG_THICK))
+                             * (1.0 - std::exp(-k_n * ct::kMagThick))
                              * std::exp(-k_n * zeta);
 
             const double c = std::cos(k_n * eta);
@@ -92,7 +88,7 @@ Force TrapHalbachField::force(const State& s, double t) const {
 
         const double b_zeta = A * sum_cos;
         const double b_eta  = A * sum_sin;
-        const double b_hold = B_HOLD * (r + R) / safe_rho;
+        const double b_hold = ct::kBHold * (r + R) / safe_rho;
 
         const double b_tot = std::sqrt(
             b_zeta * b_zeta +
@@ -110,8 +106,8 @@ Force TrapHalbachField::force(const State& s, double t) const {
 
         // derivatives wrt (x, y, z)
         const double d_Bh_x = 0.0;
-        const double d_Bh_y = -B_HOLD * (r + R) * y / std::pow(safe_rho, 3.0);
-        const double d_Bh_z = -B_HOLD * (r + R) * z / std::pow(safe_rho, 3.0);
+        const double d_Bh_y = -ct::kBHold * (r + R) * y / std::pow(safe_rho, 3.0);
+        const double d_Bh_z = -ct::kBHold * (r + R) * z / std::pow(safe_rho, 3.0);
 
         const double denom_root = std::max(root, constants::kEpsilon);
         const double R_minus_rho = R - safe_rho;
@@ -169,14 +165,9 @@ double TrapHalbachField::potential(const State& s, double t) const {
     // gravity uses unshifted z, matching legacy code
     const double z_grav = s.z;
 
-    constexpr double MAG_SPACE = 0.05114;
-    constexpr double MAG_THICK = 0.0254;
-    constexpr double B_HOLD = 0.005;
-    constexpr int N_TERMS = 3;
+    const double A = 4.0 * ct::kBRem / (constants::kPi * std::sqrt(2.0));
 
-    const double A = 4.0 * b_rem_ / (constants::kPi * std::sqrt(2.0));
-
-    const double expkx = std::exp(-constants::trap::kKappa * x);
+    const double expkx = std::exp(-ct::kKappa * x);
     const double inv = 1.0 / (1.0 + expkx);
 
     const double R = 0.5 + 0.5 * inv;
@@ -196,13 +187,13 @@ double TrapHalbachField::potential(const State& s, double t) const {
     double sum_cos = 0.0;
     double sum_sin = 0.0;
 
-    for (int n = 1; n <= N_TERMS; ++n) {
+    for (int n = 1; n <= ct::kNSumTerms; ++n) {
         const double odd = 4.0 * n - 3.0;
-        const double k_n = 2.0 * constants::kPi * odd / MAG_SPACE;
+        const double k_n = 2.0 * constants::kPi * odd / ct::kMagSpace;
         const double sign = (n % 2 == 0) ? 1.0 : -1.0;
 
         const double amp = sign / odd
-                         * (1.0 - std::exp(-k_n * MAG_THICK))
+                         * (1.0 - std::exp(-k_n * ct::kMagThick))
                          * std::exp(-k_n * zeta);
 
         sum_cos += amp * std::cos(k_n * eta);
@@ -211,7 +202,7 @@ double TrapHalbachField::potential(const State& s, double t) const {
 
     const double b_zeta = A * sum_cos;
     const double b_eta  = A * sum_sin;
-    const double b_hold = B_HOLD * (r + R) / safe_rho;
+    const double b_hold = ct::kBHold * (r + R) / safe_rho;
     const double b_tot = std::sqrt(
         b_zeta * b_zeta +
         b_eta  * b_eta +

@@ -39,7 +39,6 @@ int main()
     s.pz =  0.003 * constants::kMassN;
 
     TrapHalbachField field(
-        1.35,
         config.heat_mult,
         {}, {}, {}
     );

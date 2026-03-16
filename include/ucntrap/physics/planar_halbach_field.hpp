@@ -10,8 +10,11 @@ public:
     
     Force force(const State& s, double t) const override;
     double potential(const State& s, double t) const override;
+
 private:
-    double b_rem_, mag_space_, mag_thick_;
+    double b_rem_;
+    double mag_space_;
+    double mag_thick_;
     int n_terms_;
 };
 
