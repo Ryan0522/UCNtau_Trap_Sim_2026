@@ -3,7 +3,7 @@
 # --- 1. simulation control ---
 simulation:
   dt: 0.001
-  ntraj: 1000
+  ntraj: 20
   seed: 1
 
 # --- 2. simulation specs ---
@@ -17,10 +17,10 @@ components:
 
 # --- 3. file path and IO ---
 io:
-  neutron_init_file: "neutrons_init.out"
-  x_trace_file: "xvals.bin"
-  y_trace_file: "yvals.bin"
-  z_trace_file: "zvals.bin"
+  neutron_init_file: "data/neutrons_init_test.out"
+  x_trace_file: "data/xvals.bin"
+  y_trace_file: "data/yvals.bin"
+  z_trace_file: "data/zvals.bin"
   output_prefix: "results/run"
 
 # --- 4. experiment parameters ---

@@ -44,10 +44,7 @@ PenTrackReader::PenTrackReader(std::string filename,
 
     states_.reserve(ntraj);
     for (std::size_t i = 0; i < ntraj; ++i) {
-        if (!std::getline(input, line)) {
-            throw std::runtime_error(
-                "PenTrackReader: not enough neutrons in input file");
-        }
+        if (!std::getline(input, line)) break;
         states_.push_back(parse_line(line));
     }
 }

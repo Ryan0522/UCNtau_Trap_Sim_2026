@@ -11,6 +11,10 @@ compile_commands.json
 CTestTestfile.cmake
 Testing/
 
+# Data & Results
+results/
+data/neutrons_init.out
+
 # Visual Studio
 .vs/
 *.sln

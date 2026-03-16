@@ -1,165 +1,28 @@
-#include "ucntrap/physics/planar_halbach_field.hpp"
-#include "ucntrap/physics/trap_halbach_field.hpp"
-#include "ucntrap/numerics/integrator.hpp"
-#include "ucntrap/source/random_source.hpp"
+#include "ucntrap/runner.hpp"
 #include "ucntrap/config.hpp"
-#include "ucntrap/constants.hpp"
 
-#include <cmath>
+#include <mpi.h>
 #include <iostream>
-#include <iomanip>
-#include <vector>
 
-namespace {
-double kinetic_energy(const ucntrap::State& s)
-{
-    const double p2 = s.px * s.px + s.py * s.py + s.pz * s.pz;
-    return p2 / (2.0 * ucntrap::constants::kMassN);
-}
-}
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
 
-int main()
-{
-    using namespace ucntrap;
+    try {
+        // read YAML
+        ucntrap::SimulationConfig config = ucntrap::load_config("config/config.yaml");
 
-    SimulationConfig config;
-    config.ntraj = 1;
-    config.seed = 123;
-    config.dt = 1.0e-3;
-    config.heat_mult = 0.0;
+        // simulate
+        ucntrap::Runner runner(config);
+        runner.run();
 
-    RandomSource source(config);
-    State s = source.next();
-
-    s.x = 0.044;
-    s.y = -0.322;
-    s.z = -1.138;
-    s.px = -0.733 * constants::kMassN;
-    s.py =  0.118 * constants::kMassN;
-    s.pz =  0.003 * constants::kMassN;
-
-    TrapHalbachField field(
-        config.heat_mult,
-        {}, {}, {}
-    );
-
-    const Integrator& integrator = default_integrator();
-
-    double t = 0.0;
-    const int steps = 1000;
-
-    std::cout << std::setprecision(12);
-
-    const double U0 = field.potential(s, t);
-    const double K0 = kinetic_energy(s);
-    const double E0 = K0 + U0;
-
-    auto geom_diag = [](const State& s_now) {
-        struct Geom {
-            double r_zeta;
-            double r;
-            bool inside;
-        };
-
-        const double x = s_now.x;
-        const double y = s_now.y;
-        const double z = s_now.z;
-
-        const double expkx = std::exp(-constants::trap::kKappa * x);
-        const double inv = 1.0 / (1.0 + expkx);
-        const double R = 0.5 + 0.5 * inv;
-        const double r = 1.0 - 0.5 * inv;
-
-        const double rho = std::sqrt(y * y + z * z);
-        const double r_zeta = std::sqrt((rho - R) * (rho - R) + x * x);
-        const bool inside = (z < -1.0 && r_zeta < r);
-
-        return Geom{r_zeta, r, inside};
-    };
-
-    auto print_brief = [&](const State& s_now, double t_now, const char* tag) {
-        const Force f = field.force(s_now, t_now);
-        const double U = field.potential(s_now, t_now);
-        const double K = kinetic_energy(s_now);
-        const double E = K + U;
-        const auto g = geom_diag(s_now);
-
-        std::cout << tag
-                  << " t=" << t_now
-                  << " x=" << s_now.x
-                  << " y=" << s_now.y
-                  << " z=" << s_now.z
-                  << " pz=" << s_now.pz
-                  << " fz=" << f.fz
-                  << " U=" << U
-                  << " K=" << K
-                  << " E=" << E
-                  << " r_zeta=" << g.r_zeta
-                  << " r=" << g.r
-                  << " inside=" << g.inside
-                  << "\n";
-    };
-
-    auto print_full = [&](const State& s_now, double t_now, const char* tag) {
-        const Force f = field.force(s_now, t_now);
-        const double U = field.potential(s_now, t_now);
-        const double K = kinetic_energy(s_now);
-        const double E = K + U;
-        const auto g = geom_diag(s_now);
-
-        std::cout << tag
-                  << " t=" << t_now
-                  << " x=" << s_now.x
-                  << " y=" << s_now.y
-                  << " z=" << s_now.z
-                  << " px=" << s_now.px
-                  << " py=" << s_now.py
-                  << " pz=" << s_now.pz
-                  << " fx=" << f.fx
-                  << " fy=" << f.fy
-                  << " fz=" << f.fz
-                  << " U=" << U
-                  << " K=" << K
-                  << " E=" << E
-                  << " r_zeta=" << g.r_zeta
-                  << " r=" << g.r
-                  << " inside=" << g.inside
-                  << "\n";
-    };
-
-    print_full(s, t, "initial");
-
-    bool was_inside = geom_diag(s).inside;
-
-    for (int i = 0; i < steps; ++i) {
-        integrator.step(s, t, config.dt, field);
-        t += config.dt;
-
-        const auto g = geom_diag(s);
-
-        if (i % 50 == 0) {
-            print_brief(s, t, "step");
+    } catch (const std::exception& e) {
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank == 0) {
+            std::cerr << "Fatal Error: " << e.what() << std::endl;
         }
-        
-        was_inside = g.inside;
     }
 
-    const double Uf = field.potential(s, t);
-    const double Kf = kinetic_energy(s);
-    const double Ef = Kf + Uf;
-
-    std::cout << "final:   "
-              << s.x << " " << s.y << " " << s.z << " | "
-              << s.px << " " << s.py << " " << s.pz << "\n";
-
-    std::cout << "U0 = " << U0 << "\n";
-    std::cout << "K0 = " << K0 << "\n";
-    std::cout << "E0 = " << E0 << "\n";
-
-    std::cout << "Uf = " << Uf << "\n";
-    std::cout << "Kf = " << Kf << "\n";
-    std::cout << "Ef = " << Ef << "\n";
-    std::cout << "dE = " << (Ef - E0) << "\n";
-
+    MPI_Finalize();
     return 0;
 }
