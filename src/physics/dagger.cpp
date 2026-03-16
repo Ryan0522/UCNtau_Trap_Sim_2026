@@ -98,7 +98,7 @@ bool Dagger::check_collision(const State& s, double t) const {
     return false;
 }
 
-Hitinfo Dagger::classify_crossing(double x, double z, double t_exp) const {
+HitInfo Dagger::classify_crossing(double x, double z, double t_exp) const {
     double z_off = get_z_offset(t_exp);
 
     if (x > cd::kXMin && x < cd::kXMax) {
@@ -115,6 +115,27 @@ Hitinfo Dagger::classify_crossing(double x, double z, double t_exp) const {
     if (check_house_hit_high(x, z, z_off)) return {HitType::HouseHigh, x, z, z_off};
 
     return {HitType::None};
+}
+
+bool Dagger::check_house_hit_low(double x, double z, double z_off) const {
+    const double z_house_base = cd::kBaseZ + z_off + cd::kDaggerZShift;
+    const double dx = std::abs(x - cd::kHouseXCenter);
+
+    if (z >= z_house_base && z < (z_house_base + cd::kHouseLowH)) {
+        return dx < (0.40 + 2.0179 * (z - z_house_base)) / 2.0;
+    }
+    return false;
+}
+
+bool Dagger::check_house_hit_high(double x, double z, double z_off) const {
+    const double z_house_base = cd::kBaseZ + z_off + cd::kDaggerZShift;
+    const double dx = std::abs(x - cd::kHouseXCenter);
+
+    if (z >= (z_house_base + cd::kHouseLowH) &&
+        z <  (z_house_base + cd::kHouseHighH)) {
+        return dx < 0.69215 / 2.0;
+    }
+    return false;
 }
 
 } // namespace ucntrap

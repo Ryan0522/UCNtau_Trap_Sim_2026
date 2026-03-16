@@ -36,17 +36,16 @@ bool ProductionTracker::check_acceptance(double x, double prev_y, double curr_y)
     return false;
 }
 
-Result ProductionTracker::run(const State& startial) const {
+Result ProductionTracker::run(const State& initial) const {
     Result res;
-    State s = startial;
+    State s = initial;
     double t = 0.0;
     double energy = 0.0;
 
-    std::vector<double> tang = {0.0, 0.0, 1.0};
     std::mt19937_64 rng(config_.seed);
     std::uniform_real_distribution<double> dist(0.0, 1.0);
 
-    // 1. Record startial conditions
+    // 1. Record initial conditions
     res.t_start = 0.0;
     res.x_start = s.x; res.y_start = s.y; res.z_start = s.z;
     res.vx_start = s.px / constants::kMassN; 
@@ -58,31 +57,41 @@ Result ProductionTracker::run(const State& startial) const {
 
     // Set death time and clean time
     res.death_time = 9999;
-    double cleaning_time = config_.cleaning_time;
+    const double cleaning_time = config_.cleaning_time;
+
+    State prev_s = s;
 
     // 2. Cleaning Phase
-    int cleaning_steps = static_cast<int>(cleaning_time / config_.dt);
+    const int cleaning_steps = static_cast<int>(cleaning_time / config_.dt);
     for (int i = 0; i < cleaning_steps; ++i) {
-        State prev_s = s;
+        prev_s = s;
         integrator_.step(s, t, config_.dt, field_model_);
         t += config_.dt;
 
         // Check if cleaned
-        if ((prev_s.z < (cd::kBaseZ + config_.cleaning_height) && s.z > (cd::kBaseZ + config_.cleaning_height)) ||
-            (prev_s.z > (cd::kBaseZ + config_.cleaning_height) && s.z < (cd::kBaseZ + config_.cleaning_height))) {
-            if (s.py > 0) {
-                res.code = -2; // Cleaned
-                goto finalize;
-            }
+        const double clean_z = cd::kBaseZ + config_.cleaning_height;
+        const bool crossed_clean =
+            (prev_s.z < clean_z && s.z > clean_z) ||
+            (prev_s.z > clean_z && s.z < clean_z);
+
+        if (crossed_clean && s.py > 0.0) {
+            res.code = -2;
+            goto finalize;
+        }
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z)) {
+            res.code = -4;
+            goto finalize;
         }
     }
     
     // 3. Detection Loop
     while (t - cleaning_time < 3000.0) { // Max simulation time
-        State prev_s = s;
+        prev_s = s;
         integrator_.step(s, t, config_.dt, field_model_);
         t += config_.dt;
-        double t_exp = t - cleaning_time;
+        
+        const double t_exp = t - cleaning_time;
 
         // Check for decay
         if (t_exp > res.death_time) {
@@ -91,54 +100,126 @@ Result ProductionTracker::run(const State& startial) const {
         }
 
         // Check for raised cleaning
-        if (std::abs(s.z - (cd::kBaseZ + config_.raised_cleaning_height)) < constants::kEpsilon) {
-            res.code = -3; // Raised cleaning hit
+        const double raised_clean_z = cd::kBaseZ + config_.raised_cleaning_height;
+        const bool crossed_raised_clean =
+            (prev_s.z < raised_clean_z && s.z > raised_clean_z) ||
+            (prev_s.z > raised_clean_z && s.z < raised_clean_z);
+
+        if (crossed_raised_clean) {
+            res.code = -3; // raised clean
             goto finalize;
         }
 
-        // Check for y-plane crossing
-        if ((prev_s.y < 0 && s.y > 0) || (prev_s.y > 0 && s.y < 0)) {
+        // Check for xz-plane crossing
+        const bool crossed_y0 =
+            (prev_s.y < 0.0 && s.y > 0.0) ||
+            (prev_s.y > 0.0 && s.y < 0.0);
+        
+        if (crossed_y0) {
             // Linear inteprolation to find the exact crossing point
-            double frac = std::abs(prev_s.y) / (std::abs(s.y) + std::abs(prev_s.y));
-            double pred_x = prev_s.x + frac * (s.x - prev_s.x);
-            double pred_z = prev_s.z + frac * (s.z - prev_s.z);
-            double z_off = dagger_.get_z_offset(t_exp);
+            const double frac = std::abs(prev_s.y) / (std::abs(s.y) + std::abs(prev_s.y));
+            const double pred_x = prev_s.x + frac * (s.x - prev_s.x);
+            const double pred_z = prev_s.z + frac * (s.z - prev_s.z);
+            
+            const HitInfo hit = dagger_.classify_crossing(pred_x, pred_z, t_exp);
 
-            if (dagger_.check_collision(State{pred_x, 0.0, pred_z}, t_exp)) {
-                res.n_hit++;
+            if (hit.type != HitType::None) {
+                bool terminate = false;
 
-                // 1. Acceptance Filter
-                bool accepted = check_acceptance(pred_x, prev_s.y, s.y);
+                if (hit.type == HitType::Dagger) {
+                    res.n_hit++;
 
-                if (accepted) {
-                    double e_perp = (s.py * s.py) / (2.0 * constants::kMassN);
-                    if (SurfaceModel::check_absorption(e_perp, config_.bthick, pred_x, pred_z, z_off)) {
-                        res.code = 0; // Success: Detected
-                        goto finalize;
+                    const bool accepted = check_acceptance(hit.x, prev_s.y, s.y);
+
+                    if (accepted) {
+                        const double e_perp =
+                            (prev_s.py * prev_s.py) / (2.0 * constants::kMassN);
+
+                        if (SurfaceModel::check_absorption(
+                                e_perp, config_.bthick, hit.x, hit.z, hit.z_off)) {
+                            s = prev_s;
+                            s.x = hit.x;
+                            s.y = 0.0;
+                            s.z = hit.z;
+                            res.code = 0; // detected
+                            terminate = true;
+                        } else if (dist(rng) <= config_.wall_loss_prob) {
+                            s = prev_s;
+                            s.x = hit.x;
+                            s.y = 0.0;
+                            s.z = hit.z;
+                            res.code = -5; // wall loss after accepted dagger hit
+                            terminate = true;
+                        }
                     } else {
                         if (dist(rng) <= config_.wall_loss_prob) {
-                            res.code = -5; // Wall Loss
-                            goto finalize;
+                            s = prev_s;
+                            s.x = hit.x;
+                            s.y = 0.0;
+                            s.z = hit.z;
+                            res.code = -5; // rejected geometry hit lost on wall
+                            terminate = true;
                         }
                     }
+                } else if (hit.type == HitType::HouseLow) {
+                    res.n_hit_house_low++;
 
-                    // 4. Non-absorbing hit
-                    std::vector<double> norm = {0.0, (prev_s.y > 0 ? 1.0 : -1.0), 0.0};
-                    std::vector<double> tang = {0.0, 0.0, 1.0};
-                    SurfaceModel::reflect(s, norm, tang);
+                    if (dist(rng) <= config_.wall_loss_prob) {
+                        s = prev_s;
+                        if (dist(rng) <= config_.wall_loss_prob) {
+                        s = prev_s;
+                        s.x = hit.x;
+                        s.y = 0.0;
+                        s.z = hit.z;
+                        res.code = -6;
+                        terminate = true;
+                        }
+                    }
+                } else if (hit.type == HitType::HouseHigh) {
+                    res.n_hit_house_high++;
 
-                    // Reposition state to y = 0
-                    s.x = pred_x; s.y = 0.0; s.z = pred_z;
+                    if (dist(rng) <= config_.wall_loss_prob) {
+                        s = prev_s;
+                        s.x = hit.x;
+                        s.y = 0.0;
+                        s.z = hit.z;
+                        res.code = -7;
+                        terminate = true;
+                    }
                 }
-            }
 
-            // Check for NaN
-            if (std::isnan(s.x)) {
-                res.code = -4;
-                goto finalize;
+                if (terminate) {
+                    goto finalize;
+                }
+
+                // Surviving physical hit: reflect from the pre-hit state.
+                s = prev_s;
+
+                const std::vector<double> norm =
+                    (prev_s.y > 0.0 && prev_s.py < 0.0)
+                        ? std::vector<double>{0.0, 1.0, 0.0}
+                        : std::vector<double>{0.0, -1.0, 0.0};
+
+                const std::vector<double> tang = {0.0, 0.0, 1.0};
+
+                SurfaceModel::reflect(s, norm, tang);
+
+                // Put state back onto the crossing plane.
+                s.x = hit.x;
+                s.y = 0.0;
+                s.z = hit.z;
             }
         }
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z) ||
+            std::isnan(s.px) || std::isnan(s.py) || std::isnan(s.pz)) {
+            res.code = -4;
+            goto finalize;
+        }
     }
+
+    // timeout / max sim time
+    res.code = 2;
 
 finalize:
     // 4. Record final conditions
