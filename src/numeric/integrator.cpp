@@ -1,29 +1,45 @@
 #include "ucntrap/numerics/integrator.hpp"
 #include "ucntrap/constants.hpp"
 
+#include <array>
+
 namespace ucntrap {
+namespace {
+inline constexpr std::array<double, 4> kA = {
+    0.5153528374311229364,
+   -0.0857820194129736460,
+    0.4415830236164665242,
+    0.1288461583653841854
+};
+
+inline constexpr std::array<double, 4> kB = {
+    0.1344961992774310892,
+   -0.2248198030794208058,
+    0.7563200005156682911,
+    0.3340036032863214255
+};
+} // namespace
 
 class SymplecticMomentumIntegrator final : public Integrator {
 public:
     void step(State& s, double t, double dt, const FieldModel& field) const override {
-        // kick: p_{n+1/2} = p_n + (dt/2) F(x_n)
-        const Force f0 = field.force(s, t);
+        double local_t = t;
 
-        s.px += 0.5 * dt * f0.fx;
-        s.py += 0.5 * dt * f0.fy;
-        s.pz += 0.5 * dt * f0.fz;
+        for (std::size_t n = 0; n < 4; ++n) {
+            const Force f = field.force(s, local_t);
 
-        // drift: x_{n+1} = x_n + dt * p_{n+1/2} / m
-        s.x += dt * s.px / constants::mass_n;
-        s.y += dt * s.py / constants::mass_n;
-        s.z += dt * s.pz / constants::mass_n;
+            // kick
+            s.px += kB[n] * f.fx * dt;
+            s.py += kB[n] * f.fy * dt;
+            s.pz += kB[n] * f.fz * dt;
 
-        // kick: p_{n+1} = p_{n+1/2} + (dt/2) F(x_{n+1})
-        const Force f1 = field.force(s, t + dt);
+            // drift
+            s.x += kA[n] * s.px * dt / constants::mass_n;
+            s.y += kA[n] * s.py * dt / constants::mass_n;
+            s.z += kA[n] * s.pz * dt / constants::mass_n;
 
-        s.px += 0.5 * dt * f1.fx;
-        s.py += 0.5 * dt * f1.fy;
-        s.pz += 0.5 * dt * f1.fz;
+            local_t += kA[n] * dt;
+        }
     }
 };
 
