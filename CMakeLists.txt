@@ -9,6 +9,7 @@ option(UCNTRAP_BUILD_TESTS "Build tests" OFF)
 
 add_library(ucntrap_core
     src/core/config.cpp
+    src/core/runner.cpp
     src/experiment/production_tracker.cpp
     src/io/result_writer.cpp
     src/io/trace_loader.cpp
@@ -39,6 +40,19 @@ set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(yaml-cpp)
 
 target_link_libraries(ucntrap_core PUBLIC yaml-cpp::yaml-cpp)
+
+set(MPI_HOME "C:/Program Files (x86)/Microsoft SDKs/MPI")
+set(MPI_GUESS_LIBRARY_NAME msmpi)
+
+find_package(MPI REQUIRED)
+
+if(MPI_FOUND)
+    message(STATUS "MPI found: ${MPI_CXX_INCLUDE_DIRS}")
+    target_link_libraries(ucntrap_core PUBLIC MPI::MPI_CXX)
+else()
+    target_include_directories(ucntrap_core PUBLIC "${MPI_HOME}/Include")
+    target_link_libraries(ucntrap_core PUBLIC "${MPI_HOME}/Lib/x64/msmpi.lib")
+endif()
 
 add_executable(ucntrap
     src/cli/main.cpp
