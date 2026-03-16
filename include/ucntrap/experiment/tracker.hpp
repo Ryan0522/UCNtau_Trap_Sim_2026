@@ -32,7 +32,7 @@ struct Result {
 class Tracker {
 public:
     virtual ~Tracker() = default;
-    virtual Result run(const State& initial) const = 0;
+    virtual Result run(const State& initial) = 0;
 };
 
 } // namespace ucntrap

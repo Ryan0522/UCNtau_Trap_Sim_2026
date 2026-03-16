@@ -37,7 +37,7 @@ bool ProductionTracker::check_acceptance(double x, double prev_y, double curr_y)
     return false;
 }
 
-Result ProductionTracker::run(const State& initial) const {
+Result ProductionTracker::run(const State& initial) {
     Result res;
     State s = initial;
     double t = 0.0;
@@ -66,24 +66,18 @@ Result ProductionTracker::run(const State& initial) const {
         integrator_.step(s, t, config_.dt, field_model_);
         t += config_.dt;
 
+        // defect
+        maybe_apply_defect(s, t);
+
         // Check if cleaned
         const double clean_z = cd::kBaseZ + config_.cleaning_height;
         const bool crossed_clean =
             (prev_s.z < clean_z && s.z > clean_z) ||
             (prev_s.z > clean_z && s.z < clean_z);
 
-        if (crossed_clean) {
-            if (s.y > 0.0) {
-                res.code = -2;
-                goto finalize;
-            }
-            if(s.y > -(0.218041/2 + 0.335121 + 0.3556) && 
-                s.y < -(0.218041/2 + 0.335121) && 
-                s.x > (0.115529/2 + 0.212841 - 0.6604) && 
-                s.x < (0.115529/2 + 0.212841)) {
-                res.code = -2;
-                goto finalize;
-            }
+        if (crossed_clean && s.y > 0.0) {
+            res.code = -2;
+            goto finalize;
         }
 
         if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z)) {
@@ -98,18 +92,8 @@ Result ProductionTracker::run(const State& initial) const {
         integrator_.step(s, t, config_.dt, field_model_);
         t += config_.dt;
 
-        double totalU = field_model_.potential(s, t);
-        bool can_have_defect = (totalU - constants::kMassN * constants::kEarthG * s.z) * 10000 / constants::kMuN >= 155.34;
-
-        if (can_have_defect && rng_.uniform01() <= config_.defect) {
-            double p_mag = std::sqrt(s.px*s.px + s.py*s.py + s.pz*s.pz);
-            // randomize direction
-            double phi = rng_.uniform01() * constants::kPi;
-            double theta = rng_.uniform01() * 2.0 * constants::kPi;
-            s.px = p_mag * std::sin(phi) * std::cos(theta);
-            s.py = p_mag * std::sin(phi) * std::sin(theta);
-            s.pz = p_mag * std::cos(phi);
-        }
+        // defect
+        maybe_apply_defect(s, t);
         
         const double t_exp = t - cleaning_time;
 
@@ -125,7 +109,7 @@ Result ProductionTracker::run(const State& initial) const {
             (prev_s.z < raised_clean_z && s.z > raised_clean_z) ||
             (prev_s.z > raised_clean_z && s.z < raised_clean_z);
 
-        if (crossed_raised_clean) {
+        if (crossed_raised_clean && s.y > 0.0) {
             res.code = -3; // raised clean
             goto finalize;
         }
@@ -157,7 +141,7 @@ Result ProductionTracker::run(const State& initial) const {
                         double e_perp_eff = (p2 / (2.0 * constants::kMassN)) * std::cos(u_rand * constants::kPi / 2.0);
                         
                         if (SurfaceModel::check_absorption(
-                                e_perp_eff, config_.bthick, hit.x, hit.z, hit.z_off, rng_)) {
+                                e_perp_eff, config_.bthick, hit.x, hit.z, hit.z_off, config_.zetacut, rng_)) {
                             s = prev_s;
                             s.x = hit.x;
                             s.y = 0.0;
@@ -251,5 +235,21 @@ finalize:
 
     return res;
 }   
+
+void ProductionTracker::maybe_apply_defect(State& s, double t) {
+    const double totalU = field_model_.potential(s, t);
+    const bool can_have_defect = (totalU - constants::kMassN * constants::kEarthG * s.z) * 10000.0 / constants::kMuN >= 155.340528314;
+
+    if (can_have_defect && rng_.uniform01() <= config_.defect) {
+        const double p_mag = std::sqrt(s.px*s.px + s.py*s.py + s.pz*s.pz);
+
+        const double phi = rng_.uniform01() * constants::kPi;
+        const double theta = rng_.uniform01() * 2.0 * constants::kPi;
+
+        s.px = p_mag * std::sin(phi) * std::cos(theta);
+        s.py = p_mag * std::sin(phi) * std::sin(theta);
+        s.pz = p_mag * std::cos(phi);
+    }
+}
 
 } // namespace ucntrap

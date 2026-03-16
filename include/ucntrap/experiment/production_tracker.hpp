@@ -18,9 +18,11 @@ public:
 
     bool check_acceptance(double x, double prev_y, double curr_y) const;
 
-    Result run(const State& initial) const override;
+    Result run(const State& initial) override;
 
 private:
+    void maybe_apply_defect(State& s, double t);
+
     SimulationConfig config_;
     const FieldModel& field_model_;
     const Integrator& integrator_;

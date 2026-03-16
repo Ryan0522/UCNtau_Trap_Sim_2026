@@ -110,6 +110,7 @@ bool SurfaceModel::check_absorption(double e_perp,
                                     double x,
                                     double z,
                                     double z_off,
+                                    double zeta_cut,
                                     RandomEngine& rng) {
     const double z_rel = std::abs(z - z_off);
 
@@ -120,12 +121,11 @@ bool SurfaceModel::check_absorption(double e_perp,
         zeta = 1.0 - std::sqrt(x * x + std::pow(z_rel - 0.5, 2));
     }
 
-    // Temporary until you thread config_.zetacut into SurfaceModel.
     double coverage = 0.0;
-    if (zeta >= cs::kZetaCut) {
+    if (zeta >= zeta_cut) {
         coverage = 1.0;
     } else if (zeta > 0.0) {
-        coverage = zeta / cs::kZetaCut;
+        coverage = zeta / zeta_cut;
     } else {
         coverage = 0.0;
     }

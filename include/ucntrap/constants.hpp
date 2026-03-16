@@ -81,7 +81,6 @@ namespace surface {
     inline constexpr double kNSulfur = 2.527e28;
     inline constexpr double kASulfur = 2.847e-15;
     inline constexpr double kSigmaSulfur = 1.556e-28;
-    inline constexpr double kZetaCut = 0.0127203;
 }
 
 } // namespace ucntrap::constants
