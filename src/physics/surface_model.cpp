@@ -4,7 +4,6 @@
 #include <array>
 #include <cmath>
 #include <complex>
-#include <random>
 #include <vector>
 
 namespace ucntrap {
@@ -110,7 +109,8 @@ bool SurfaceModel::check_absorption(double e_perp,
                                     double b_thick,
                                     double x,
                                     double z,
-                                    double z_off) {
+                                    double z_off,
+                                    RandomEngine& rng) {
     const double z_rel = std::abs(z - z_off);
 
     double zeta = 0.0;
@@ -132,25 +132,20 @@ bool SurfaceModel::check_absorption(double e_perp,
         coverage = 0.0;
     }
 
-    static std::mt19937_64 rng(42);
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
-
     const double p_absorb =
         clamp01(coverage * calculate_absorption_prob(e_perp, b_thick));
 
-    return dist(rng) < p_absorb;
+    return rng.uniform01() < p_absorb;
 }
 
 void SurfaceModel::reflect(State& s,
                            const std::vector<double>& norm,
-                           const std::vector<double>& tang) {
-    static std::mt19937_64 rng(42);
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
-
+                           const std::vector<double>& tang,
+                           RandomEngine& rng) {
     const double p_total = std::sqrt(s.px * s.px + s.py * s.py + s.pz * s.pz);
 
-    const double theta = std::asin(std::sqrt(dist(rng)));
-    const double phi = 2.0 * constants::kPi * dist(rng);
+    const double theta = std::asin(std::sqrt(rng.uniform01()));
+    const double phi = 2.0 * constants::kPi * rng.uniform01();
 
     const double p_n = std::cos(theta);
     const double p_t1 = std::sin(theta) * std::cos(phi);

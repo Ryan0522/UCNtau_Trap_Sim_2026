@@ -21,6 +21,8 @@ int Runner::run() const {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    RandomEngine rng(config_.seed + rank);
+
     // 1. Calculate neutron counts in this rank
     size_t total_ntraj = config_.ntraj;
     size_t my_ntraj = total_ntraj / size;
@@ -66,7 +68,7 @@ int Runner::run() const {
     // 5. Initialize integrators and trackers
     const Integrator& integrator = default_integrator();
     Dagger dagger(config_.dip_heights, config_.dip_end_times);
-    ProductionTracker tracker(config_, *field, integrator, dagger);
+    ProductionTracker tracker(config_, *field, integrator, dagger, rng);
 
     // 6. Set output path
     std::string out_path = config_.output_prefix + "_rank" + std::to_string(rank) + ".csv";

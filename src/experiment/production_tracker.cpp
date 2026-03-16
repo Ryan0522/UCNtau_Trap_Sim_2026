@@ -4,7 +4,6 @@
 
 #include <cmath>
 #include <limits>
-#include <random>
 
 namespace ucntrap {
 
@@ -13,11 +12,13 @@ namespace cd = constants::dagger;
 ProductionTracker::ProductionTracker(const SimulationConfig& config,
                                      const FieldModel& field_model,
                                      const Integrator& integrator,
-                                     const Dagger& dagger)
+                                     const Dagger& dagger,
+                                     RandomEngine& rng)
     : config_(config),
       field_model_(field_model),
       integrator_(integrator),
-      dagger_(dagger) {}
+      dagger_(dagger),
+      rng_(rng) {}
 
 bool ProductionTracker::check_acceptance(double x, double prev_y, double curr_y) const {
     bool in_x_range = (x > -0.3524 && x < 0.0476);
@@ -41,9 +42,6 @@ Result ProductionTracker::run(const State& initial) const {
     State s = initial;
     double t = 0.0;
     double energy = 0.0;
-
-    std::mt19937_64 rng(config_.seed);
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
 
     // 1. Record initial conditions
     res.t_start = 0.0;
@@ -136,14 +134,14 @@ Result ProductionTracker::run(const State& initial) const {
                             (prev_s.py * prev_s.py) / (2.0 * constants::kMassN);
 
                         if (SurfaceModel::check_absorption(
-                                e_perp, config_.bthick, hit.x, hit.z, hit.z_off)) {
+                                e_perp, config_.bthick, hit.x, hit.z, hit.z_off, rng_)) {
                             s = prev_s;
                             s.x = hit.x;
                             s.y = 0.0;
                             s.z = hit.z;
                             res.code = 0; // detected
                             terminate = true;
-                        } else if (dist(rng) <= config_.wall_loss_prob) {
+                        } else if (rng_.uniform01() <= config_.wall_loss_prob) {
                             s = prev_s;
                             s.x = hit.x;
                             s.y = 0.0;
@@ -152,7 +150,7 @@ Result ProductionTracker::run(const State& initial) const {
                             terminate = true;
                         }
                     } else {
-                        if (dist(rng) <= config_.wall_loss_prob) {
+                        if (rng_.uniform01() <= config_.wall_loss_prob) {
                             s = prev_s;
                             s.x = hit.x;
                             s.y = 0.0;
@@ -164,21 +162,18 @@ Result ProductionTracker::run(const State& initial) const {
                 } else if (hit.type == HitType::HouseLow) {
                     res.n_hit_house_low++;
 
-                    if (dist(rng) <= config_.wall_loss_prob) {
-                        s = prev_s;
-                        if (dist(rng) <= config_.wall_loss_prob) {
+                    if (rng_.uniform01() <= config_.wall_loss_prob) {
                         s = prev_s;
                         s.x = hit.x;
                         s.y = 0.0;
                         s.z = hit.z;
                         res.code = -6;
                         terminate = true;
-                        }
                     }
                 } else if (hit.type == HitType::HouseHigh) {
                     res.n_hit_house_high++;
 
-                    if (dist(rng) <= config_.wall_loss_prob) {
+                    if (rng_.uniform01() <= config_.wall_loss_prob) {
                         s = prev_s;
                         s.x = hit.x;
                         s.y = 0.0;
@@ -202,7 +197,7 @@ Result ProductionTracker::run(const State& initial) const {
 
                 const std::vector<double> tang = {0.0, 0.0, 1.0};
 
-                SurfaceModel::reflect(s, norm, tang);
+                SurfaceModel::reflect(s, norm, tang, rng_);
 
                 // Put state back onto the crossing plane.
                 s.x = hit.x;

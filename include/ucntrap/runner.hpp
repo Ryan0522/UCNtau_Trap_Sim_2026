@@ -1,5 +1,6 @@
 #pragma once
 #include "ucntrap/config.hpp"
+#include "ucntrap/random.hpp"
 
 namespace ucntrap {
 

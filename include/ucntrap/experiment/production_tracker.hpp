@@ -4,6 +4,7 @@
 #include "ucntrap/physics/field_model.hpp"
 #include "ucntrap/numerics/integrator.hpp"
 #include "ucntrap/config.hpp"
+#include "ucntrap/random.hpp"
 
 namespace ucntrap {
 
@@ -12,7 +13,8 @@ public:
     ProductionTracker(const SimulationConfig& config,
                       const FieldModel& field_model,
                       const Integrator& integrator,
-                      const Dagger& dagger);
+                      const Dagger& dagger,
+                      RandomEngine& rng);
 
     bool check_acceptance(double x, double prev_y, double curr_y) const;
 
@@ -23,6 +25,7 @@ private:
     const FieldModel& field_model_;
     const Integrator& integrator_;
     const Dagger& dagger_;
+    RandomEngine& rng_;
 };
 
 } // namespace ucntrap
