@@ -9,7 +9,9 @@ class Integrator {
 public:
     virtual ~Integrator() = default;
     virtual void step(State& state, double t, double dt,
-                        const FieldModel& field) const = 0;
+                      const FieldModel& field) const = 0;
 };
+
+const Integrator& default_integrator();
 
 } // namespace ucntrap

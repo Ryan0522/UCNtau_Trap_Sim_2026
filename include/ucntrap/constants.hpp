@@ -3,7 +3,7 @@
 namespace ucntrap::constants {
 
 inline constexpr double mu_n = 9.6623647e-27;
-inline constexpr double mass_n = 1.674927471-27;
+inline constexpr double mass_n = 1.674927471e-27;
 inline constexpr double g = 9.80665e0;
 inline constexpr double jtonev = 6.2415091e27;
 inline constexpr double hbar = 1.054571800e-34;
