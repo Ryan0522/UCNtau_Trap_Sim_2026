@@ -76,9 +76,9 @@ Force PlanarHalbachField::force(const State& s, double /*t*/) const
     const double bmag = std::max(f.bmag, constants::epsilon);
 
     Force out{};
-    out.fx = constants::mu_n * (f.bx * f.dBxdx + f.bz * f.dBzdx) / bmag;
+    out.fx = -constants::mu_n * (f.bx * f.dBxdx + f.bz * f.dBzdx) / bmag;
     out.fy = 0.0;
-    out.fz = constants::mu_n * (f.bx * f.dBxdz + f.bz * f.dBzdz) / bmag
+    out.fz = -constants::mu_n * (f.bx * f.dBxdz + f.bz * f.dBzdz) / bmag
            - constants::mass_n * constants::g;
     return out;
 }
@@ -87,7 +87,7 @@ double PlanarHalbachField::potential(const State& s, double /*t*/) const
 {
     const auto f = eval_planar_halbach(s.x, s.z, b_rem_, mag_space_, mag_thick_, n_terms_);
     const double z_grav = s.z + 1.5;
-    return -constants::mu_n * f.bmag + constants::mass_n * constants::g * z_grav;
+    return constants::mu_n * f.bmag + constants::mass_n * constants::g * z_grav;
 }
 
 } // namespace ucntrap

@@ -26,11 +26,11 @@ void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, d
     
     constexpr double SAMPDT = 0.0004;
     int num = tx_.size();
-    int iLow = static_cast<int>(t / SAMPDT);
-    double frac = (t - iLow * SAMPDT) / SAMPDT;
-    
-    int iHi = (iLow + 1) % num;
-    iLow = iLow % num;
+    int iLowRaw = static_cast<int>(t / SAMPDT);
+    double frac = (t - iLowRaw * SAMPDT) / SAMPDT;
+
+    int iLow = (iLowRaw % num + num) % num;
+    int iHi  = ((iLowRaw + 1) % num + num) % num;
 
     x = s.x + heat_mult_ * (tx_[iLow] + frac * (tx_[iHi] - tx_[iLow]));
     y = s.y + heat_mult_ * (ty_[iLow] + frac * (ty_[iHi] - ty_[iLow]));
@@ -63,7 +63,7 @@ Force TrapHalbachField::force(const State& s, double t) const {
     const double root = std::sqrt(x * x + delta * delta);
     const double r_zeta = root;
 
-    Force f_out{0.0, 0.0, 0.0};
+    Force f_out{NAN, NAN, NAN};
 
     if (z < -1.0 && r_zeta < r) {
         const double eta = r * std::atan(x / (safe_rho - R));
@@ -143,19 +143,19 @@ Force TrapHalbachField::force(const State& s, double t) const {
         const double d_Eta_z =
             -r * x * z / (safe_rho * std::max(denom_eta_2, constants::epsilon));
 
-        f_out.fx = constants::mu_n * (1.0 / safe_b_tot) * (
+        f_out.fx = -constants::mu_n * (1.0 / safe_b_tot) * (
             b_zeta * (d_BZeta_0 * d_Zeta_x + d_BZeta_1 * d_Eta_x) +
             b_eta  * (d_BEta_0  * d_Zeta_x + d_BEta_1  * d_Eta_x) +
             b_hold * d_Bh_x
         );
 
-        f_out.fy = constants::mu_n * (1.0 / safe_b_tot) * (
+        f_out.fy = -constants::mu_n * (1.0 / safe_b_tot) * (
             b_zeta * (d_BZeta_0 * d_Zeta_y + d_BZeta_1 * d_Eta_y) +
             b_eta  * (d_BEta_0  * d_Zeta_y + d_BEta_1  * d_Eta_y) +
             b_hold * d_Bh_y
         );
 
-        f_out.fz = constants::mu_n * (1.0 / safe_b_tot) * (
+        f_out.fz = -constants::mu_n * (1.0 / safe_b_tot) * (
             b_zeta * (d_BZeta_0 * d_Zeta_z + d_BZeta_1 * d_Eta_z) +
             b_eta  * (d_BEta_0  * d_Zeta_z + d_BEta_1  * d_Eta_z) +
             b_hold * d_Bh_z
@@ -224,7 +224,7 @@ double TrapHalbachField::potential(const State& s, double t) const {
         b_hold * b_hold
     );
 
-    return -constants::mu_n * b_tot + constants::mass_n * constants::g * z_grav;
+    return constants::mu_n * b_tot + constants::mass_n * constants::g * z_grav;
 }
 
 } // namespace ucntrap 

@@ -144,10 +144,10 @@ int main()
             print_brief(s, t, "step");
         }
 
-        // 快接近邊界時，印完整資訊
-        if (g.inside && (g.r - g.r_zeta) < 0.05) {
-            print_full(s, t, "near_boundary");
-        }
+        // // 快接近邊界時，印完整資訊
+        // if (g.inside && (g.r - g.r_zeta) < 0.05) {
+        //     print_full(s, t, "near_boundary");
+        // }
 
         // 剛出界的瞬間，印完整資訊
         if (was_inside && !g.inside) {
