@@ -16,6 +16,14 @@ TrapHalbachField::TrapHalbachField(double b_rem, double heat_mult,
     : b_rem_(b_rem), heat_mult_(heat_mult), tx_(tx), ty_(ty), tz_(tz) {}
 
 void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const {
+    
+    if (heat_mult_ == 0.0 || tx_.empty() || ty_.empty() || tz_.empty()) {
+        x = s.x;
+        y = s.y;
+        z = s.z;
+        return;
+    }
+    
     constexpr double SAMPDT = 0.0004;
     int num = tx_.size();
     int iLow = static_cast<int>(t / SAMPDT);
