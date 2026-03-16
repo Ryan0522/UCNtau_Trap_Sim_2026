@@ -1,6 +1,7 @@
 #include "ucntrap/physics/field_model.hpp"
 #include "ucntrap/numerics/integrator.hpp"
 #include "ucntrap/source/random_source.hpp"
+#include "ucntrap/constants.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -27,7 +28,7 @@ int main()
     const Integrator& integrator = default_integrator();
 
     double t = 0.0;
-    const int step = 1000;
+    const int steps = 1000;
 
     std::cout << std::setprecision(10);
     std::cout << "initial: "
@@ -37,12 +38,31 @@ int main()
     for (int i = 0; i < steps; ++i) {
         integrator.step(s, t, config.dt, field);
         t += config.dt;
+
+        if (i % 100 == 0) {
+            const double p2 = s.px * s.px + s.py * s.py + s.pz * s.pz;
+            const double K = p2 / (2.0 * constants::mass_n);
+            const double U = field.potential(s, t);
+            const double E = K + U;
+
+            std::cout << "step " << i
+                      << "  x=" << s.x
+                      << "  z=" << s.z
+                      << "  E=" << E << "\n";
+        }
     }
 
     std::cout << "final:   "
               << s.x << " " << s.y << " " << s.z << " | "
               << s.px << " " << s.py << " " << s.pz << "\n";
 
-    std::cout << "U_final = " << field.potential(s, t) << "\n";
+    const double p2 = s.px * s.px + s.py * s.py + s.pz * s.pz;
+    const double K = p2 / (2.0 * constants::mass_n);
+    const double U = field.potential(s, t);
+
+    std::cout << "K_final = " << K << "\n";
+    std::cout << "U_final = " << U << "\n";
+    std::cout << "E_final = " << (K + U) << "\n";
+
     return 0;
 }

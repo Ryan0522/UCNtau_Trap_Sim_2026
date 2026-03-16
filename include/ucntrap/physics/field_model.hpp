@@ -30,6 +30,6 @@ private:
     double mag_space_;
     double mag_thick_;
     int n_terms_;
-}
+};
 
 } // namespace ucntrap

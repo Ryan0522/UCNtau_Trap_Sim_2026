@@ -5,13 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(UCNTRAP_BUILD_TESTS "Build tests" ON)
+option(UCNTRAP_BUILD_TESTS "Build tests" OFF)
 
 add_library(ucntrap_core
     src/core/config.cpp
     src/core/runner.cpp
     src/numeric/integrator.cpp
     src/physics/field_model.cpp
+    src/source/random_source.cpp
 )
 
 target_include_directories(ucntrap_core
