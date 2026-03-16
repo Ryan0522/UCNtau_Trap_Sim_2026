@@ -14,7 +14,7 @@ namespace {
 double kinetic_energy(const ucntrap::State& s)
 {
     const double p2 = s.px * s.px + s.py * s.py + s.pz * s.pz;
-    return p2 / (2.0 * ucntrap::constants::mass_n);
+    return p2 / (2.0 * ucntrap::constants::kMassN);
 }
 }
 
@@ -34,9 +34,9 @@ int main()
     s.x = 0.044;
     s.y = -0.322;
     s.z = -1.138;
-    s.px = -0.733 * constants::mass_n;
-    s.py =  0.118 * constants::mass_n;
-    s.pz =  0.003 * constants::mass_n;
+    s.px = -0.733 * constants::kMassN;
+    s.py =  0.118 * constants::kMassN;
+    s.pz =  0.003 * constants::kMassN;
 
     TrapHalbachField field(
         1.35,
@@ -66,8 +66,7 @@ int main()
         const double y = s_now.y;
         const double z = s_now.z;
 
-        constexpr double KAPPA = 1000.0;
-        const double expkx = std::exp(-KAPPA * x);
+        const double expkx = std::exp(-constants::trap::kKappa * x);
         const double inv = 1.0 / (1.0 + expkx);
         const double R = 0.5 + 0.5 * inv;
         const double r = 1.0 - 0.5 * inv;
@@ -139,21 +138,10 @@ int main()
 
         const auto g = geom_diag(s);
 
-        // 每 50 步印一次簡短版
         if (i % 50 == 0) {
             print_brief(s, t, "step");
         }
-
-        // // 快接近邊界時，印完整資訊
-        // if (g.inside && (g.r - g.r_zeta) < 0.05) {
-        //     print_full(s, t, "near_boundary");
-        // }
-
-        // 剛出界的瞬間，印完整資訊
-        if (was_inside && !g.inside) {
-            print_full(s, t, "exited");
-        }
-
+        
         was_inside = g.inside;
     }
 

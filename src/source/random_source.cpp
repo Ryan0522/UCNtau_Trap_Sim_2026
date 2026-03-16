@@ -31,9 +31,9 @@ State RandomSource::next() {
     s.y = uniform(-0.02, 0.02);
     s.z = uniform(0.00, 0.10);
 
-    s.px = constants::mass_n * uniform(-1.0, 1.0);
-    s.py = constants::mass_n * uniform(-1.0, 1.0);
-    s.pz = constants::mass_n * uniform(-1.0, 1.0);
+    s.px = constants::kMassN * uniform(-1.0, 1.0);
+    s.py = constants::kMassN * uniform(-1.0, 1.0);
+    s.pz = constants::kMassN * uniform(-1.0, 1.0);
 
     return s;
 }

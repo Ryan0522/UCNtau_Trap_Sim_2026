@@ -4,21 +4,8 @@
 #include <array>
 
 namespace ucntrap {
-namespace {
-inline constexpr std::array<double, 4> kA = {
-    0.5153528374311229364,
-   -0.0857820194129736460,
-    0.4415830236164665242,
-    0.1288461583653841854
-};
 
-inline constexpr std::array<double, 4> kB = {
-    0.1344961992774310892,
-   -0.2248198030794208058,
-    0.7563200005156682911,
-    0.3340036032863214255
-};
-} // namespace
+namespace Symp = constants::numeric;
 
 class SymplecticMomentumIntegrator final : public Integrator {
 public:
@@ -29,16 +16,16 @@ public:
             const Force f = field.force(s, local_t);
 
             // kick
-            s.px += kB[n] * f.fx * dt;
-            s.py += kB[n] * f.fy * dt;
-            s.pz += kB[n] * f.fz * dt;
+            s.px += Symp::kSymplecticB[n] * f.fx * dt;
+            s.py += Symp::kSymplecticB[n] * f.fy * dt;
+            s.pz += Symp::kSymplecticB[n] * f.fz * dt;
 
             // drift
-            s.x += kA[n] * s.px * dt / constants::mass_n;
-            s.y += kA[n] * s.py * dt / constants::mass_n;
-            s.z += kA[n] * s.pz * dt / constants::mass_n;
+            s.x += Symp::kSymplecticA[n] * s.px * dt / constants::kMassN;
+            s.y += Symp::kSymplecticA[n] * s.py * dt / constants::kMassN;
+            s.z += Symp::kSymplecticA[n] * s.pz * dt / constants::kMassN;
 
-            local_t += kA[n] * dt;
+            local_t += Symp::kSymplecticA[n] * dt;
         }
     }
 };
