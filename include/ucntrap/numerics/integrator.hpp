@@ -1,5 +1,4 @@
 #pragma once
-
 #include "ucntrap/state.hpp"
 #include "ucntrap/physics/field_model.hpp"
 

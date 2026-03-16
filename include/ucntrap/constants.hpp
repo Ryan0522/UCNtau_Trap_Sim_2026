@@ -22,7 +22,6 @@ inline constexpr double kPScale = 1.25e-27;
 // --- 3. UCNtau Apparatus ---
 namespace trap {
     // Halbach Array Parameters
-
     inline constexpr double kMagSpace  = 0.05114;
     inline constexpr double kMagThick  = 0.0254;
     inline constexpr double kKappa     = 1000.0;
@@ -48,6 +47,40 @@ namespace numeric {
         0.7563200005156682911,
         0.3340036032863214255
     };
+}
+
+// --- 5. Dagger Parameters ---
+namespace dagger {
+    // Dagger geometries
+    inline constexpr double kBaseZ       = -1.5;
+    inline constexpr double kDaggerZShift = 0.2;
+    inline constexpr double kXMin         = -0.3524;
+    inline constexpr double kXMax         = 0.0476;
+
+    // House parameters
+    inline constexpr double kHouseLowH    = 0.14478;
+    inline constexpr double kHouseHighH   = 0.2667;
+    inline constexpr double kHouseXCenter = -0.1524;
+
+    // Motor parameters for Dagger motion
+    inline constexpr double kAcc = 6.0; // max accel
+    inline constexpr double kVel = 1.4; // max vel
+    inline constexpr double kSpr = 51200.0/ 2.0;
+}
+
+// --- 6. Dagger Surface Model Parameters ---
+namespace surface {
+    inline constexpr double kNBoron = 1.37e29;
+    inline constexpr double kABoron = -0.1e-15;
+    inline constexpr double kSigmaBoron = 2200.0 * 3.835e-25;
+    
+    inline constexpr double kNZinc = 2.527e28;
+    inline constexpr double kAZinc = 5.68e-15;
+    inline constexpr double kSigmaZinc = 5.241e-28;
+
+    inline constexpr double kNSulfur = 2.527e28;
+    inline constexpr double kASulfur = 2.847e-15;
+    inline constexpr double kSigmaSulfur = 1.556e-28;
 }
 
 } // namespace ucntrap::constants

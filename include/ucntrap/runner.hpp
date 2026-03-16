@@ -1,5 +1,4 @@
 #pragma once
-
 #include "ucntrap/config.hpp"
 
 namespace ucntrap {

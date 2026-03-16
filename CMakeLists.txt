@@ -9,7 +9,9 @@ option(UCNTRAP_BUILD_TESTS "Build tests" OFF)
 
 add_library(ucntrap_core
     src/core/config.cpp
+    src/experiment/production_tracker.cpp
     src/numeric/integrator.cpp
+    src/physics/dagger.cpp
     src/physics/planar_halbach_field.cpp
     src/physics/trap_halbach_field.cpp
     src/source/random_source.cpp

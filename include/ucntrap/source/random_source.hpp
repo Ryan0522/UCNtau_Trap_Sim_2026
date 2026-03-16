@@ -1,8 +1,6 @@
 #pragma once
-
 #include "ucntrap/config.hpp"
 #include "ucntrap/source/initial_condition_source.hpp"
-
 #include <cstddef>
 #include <random>
 

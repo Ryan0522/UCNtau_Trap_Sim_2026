@@ -1,5 +1,4 @@
 #pragma once
-
 #include "ucntrap/state.hpp"
 
 namespace ucntrap {
