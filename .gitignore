@@ -1,0 +1,13 @@
+build/
+dist/
+*.o
+*.so
+*.a
+*.out
+*.bin
+*.h5
+*.prof
+*.pyc
+__pycache__/
+.vscode/
+.DS_Store
