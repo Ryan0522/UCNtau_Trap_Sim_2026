@@ -121,13 +121,11 @@ bool SurfaceModel::check_absorption(double e_perp,
     }
 
     // Temporary until you thread config_.zetacut into SurfaceModel.
-    constexpr double kZetaCutLocal = 0.0127203;
-
     double coverage = 0.0;
-    if (zeta >= kZetaCutLocal) {
+    if (zeta >= cs::kZetaCut) {
         coverage = 1.0;
     } else if (zeta > 0.0) {
-        coverage = zeta / kZetaCutLocal;
+        coverage = zeta / cs::kZetaCut;
     } else {
         coverage = 0.0;
     }

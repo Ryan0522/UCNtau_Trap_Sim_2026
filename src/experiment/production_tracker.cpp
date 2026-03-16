@@ -72,9 +72,18 @@ Result ProductionTracker::run(const State& initial) const {
             (prev_s.z < clean_z && s.z > clean_z) ||
             (prev_s.z > clean_z && s.z < clean_z);
 
-        if (crossed_clean && s.py > 0.0) {
-            res.code = -2;
-            goto finalize;
+        if (crossed_clean) {
+            if (s.y > 0.0) {
+                res.code = -2;
+                goto finalize;
+            }
+            if(s.y > -(0.218041/2 + 0.335121 + 0.3556) && 
+                s.y < -(0.218041/2 + 0.335121) && 
+                s.x > (0.115529/2 + 0.212841 - 0.6604) && 
+                s.x < (0.115529/2 + 0.212841)) {
+                res.code = -2;
+                goto finalize;
+            }
         }
 
         if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z)) {
@@ -88,6 +97,19 @@ Result ProductionTracker::run(const State& initial) const {
         prev_s = s;
         integrator_.step(s, t, config_.dt, field_model_);
         t += config_.dt;
+
+        double totalU = field_model_.potential(s, t);
+        bool can_have_defect = (totalU - constants::kMassN * constants::kEarthG * s.z) * 10000 / constants::kMuN >= 155.34;
+
+        if (can_have_defect && rng_.uniform01() <= config_.defect) {
+            double p_mag = std::sqrt(s.px*s.px + s.py*s.py + s.pz*s.pz);
+            // randomize direction
+            double phi = rng_.uniform01() * constants::kPi;
+            double theta = rng_.uniform01() * 2.0 * constants::kPi;
+            s.px = p_mag * std::sin(phi) * std::cos(theta);
+            s.py = p_mag * std::sin(phi) * std::sin(theta);
+            s.pz = p_mag * std::cos(phi);
+        }
         
         const double t_exp = t - cleaning_time;
 
@@ -130,11 +152,12 @@ Result ProductionTracker::run(const State& initial) const {
                     const bool accepted = check_acceptance(hit.x, prev_s.y, s.y);
 
                     if (accepted) {
-                        const double e_perp =
-                            (prev_s.py * prev_s.py) / (2.0 * constants::kMassN);
-
+                        double p2 = (s.px * s.px + s.py * s.py + s.pz * s.pz);
+                        double u_rand = rng_.uniform01();
+                        double e_perp_eff = (p2 / (2.0 * constants::kMassN)) * std::cos(u_rand * constants::kPi / 2.0);
+                        
                         if (SurfaceModel::check_absorption(
-                                e_perp, config_.bthick, hit.x, hit.z, hit.z_off, rng_)) {
+                                e_perp_eff, config_.bthick, hit.x, hit.z, hit.z_off, rng_)) {
                             s = prev_s;
                             s.x = hit.x;
                             s.y = 0.0;
