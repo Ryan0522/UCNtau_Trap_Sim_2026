@@ -5,6 +5,7 @@
 #include "ucntrap/numerics/integrator.hpp"
 #include "ucntrap/source/pentrack_reader.hpp"
 #include "ucntrap/source/random_source.hpp"
+#include "ucntrap/io/trace_loader.hpp"
 #include "ucntrap/io/result_writer.hpp"
 
 #include <mpi.h>
@@ -48,7 +49,16 @@ int Runner::run() const {
     // 4. Initialize field
     std::unique_ptr<FieldModel> field;
     if (config_.field_model == "trap") {
-        field = std::make_unique<TrapHalbachField>(config_.heat_mult, std::vector<double>{}, std::vector<double>{}, std::vector<double>{});
+        Trace trace_data = load_trace(config_.x_trace_file,
+                                        config_.y_trace_file,
+                                        config_.z_trace_file);
+
+        field = std::make_unique<TrapHalbachField>(
+            config_.heat_mult,
+            trace_data.x,
+            trace_data.y,
+            trace_data.z
+        );
     } else {
         field = std::make_unique<PlanarHalbachField>(1.35, 0.05114, 0.0254, 3);
     }
