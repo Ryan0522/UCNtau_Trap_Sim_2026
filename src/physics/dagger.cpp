@@ -98,4 +98,23 @@ bool Dagger::check_collision(const State& s, double t) const {
     return false;
 }
 
+Hitinfo Dagger::classify_crossing(double x, double z, double t_exp) const {
+    double z_off = get_z_offset(t_exp);
+
+    if (x > cd::kXMin && x < cd::kXMax) {
+        double z_rel = std::abs(z - z_off);
+        double zeta = (x > 0) ? (0.5 - std::sqrt(x*x + std::pow(z_rel - 1.0, 2))) 
+                              : (1.0 - std::sqrt(x*x + std::pow(z_rel - 0.5, 2)));
+        
+        if (zeta > 0.0 && z < (cd::kBaseZ + z_off + cd::kDaggerZShift)) {
+            return {HitType::Dagger, x, z, z_off};
+        }
+    }
+
+    if (check_house_hit_low(x, z, z_off)) return {HitType::HouseLow, x, z, z_off};
+    if (check_house_hit_high(x, z, z_off)) return {HitType::HouseHigh, x, z, z_off};
+
+    return {HitType::None};
+}
+
 } // namespace ucntrap

@@ -14,6 +14,8 @@ public:
                       const Integrator& integrator,
                       const Dagger& dagger);
 
+    bool check_acceptance(double x, double prev_y, double curr_y) const;
+
     Result run(const State& initial) const override;
 
 private:

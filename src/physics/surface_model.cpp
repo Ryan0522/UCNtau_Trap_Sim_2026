@@ -19,7 +19,7 @@ namespace {
     }
 
     std::complex<double> k_wave(double e_perp, std::complex<double> u) {
-        return std::sqrt((2.0 * un::kMassN / (un::kHbar * un::kHbar)) * (e_perp - u));
+        return std::sqrt((2.0 * constants::kMassN / (constants::kHbar * constants::kHbar)) * (e_perp - u));
     }
 
     ComplexMat m_matrix(std::complex<double> kn, std::complex<double> kn_minus_1, double z) {
@@ -43,12 +43,12 @@ std::vector<std::complex<double>> matmul(const std::vector<std::complex<double>>
 
 double SurfaceModel::calculate_absorption_prob(double e_perp, double b_thick) {
     // 1. Calculate potential
-    double v_boron = (2.0 * un::kPi * (un::kHbar * un::kHbar) / un::kMassN) * un::surface::kABoron * un::surface::kNBoron;
-    double w_boron = (un::kHbar / 2.0) * un::surface::kNBoron * un::surface::kSigmaBoron;
+    double v_boron = (2.0 * constants::kPi * (constants::kHbar * constants::kHbar) / constants::kMassN) * cs::kABoron * cs::kNBoron;
+    double w_boron = (constants::kHbar / 2.0) * cs::kNBoron * cs::kSigmaBoron;
     
-    const double v_zns = (2.0 * un::kPi * (un::kHbar * un::kHbar) / un::kMassN) * un::surface::kAZinc * un::surface::kNZinc 
-                         + (2.0 * un::kPi * (un::kHbar * un::kHbar) / un::kMassN) * un::surface::kASulfur * un::surface::kNSulfur;
-    const double w_zns = (un::kHbar / 2.0) * (un::surface::kNZinc * un::surface::kSigmaZinc + un::surface::kNSulfur * un::surface::kSigmaSulfur);
+    const double v_zns = (2.0 * constants::kPi * (constants::kHbar * constants::kHbar) / constants::kMassN) * cs::kAZinc * cs::kNZinc 
+                         + (2.0 * constants::kPi * (constants::kHbar * constants::kHbar) / constants::kMassN) * cs::kASulfur * cs::kNSulfur;
+    const double w_zns = (constants::kHbar / 2.0) * (cs::kNZinc * cs::kSigmaZinc + cs::kNSulfur * cs::kSigmaSulfur);
 
     std::vector<std::complex<double>> potentials = {
         std::complex<double>(0.0, 0.0),             // vacuum
@@ -72,37 +72,43 @@ double SurfaceModel::calculate_absorption_prob(double e_perp, double b_thick) {
 
 bool SurfaceModel::check_absorption(double e_perp, double b_thick_nm, double x, double z, double z_off) {
     // Calculate boron layer effective coverage based on zeta
-    double zeta;
-    if (x > 0.0) {
-        zeta = 0.5 - std::sqrt(x * x + std::pow(std::abs(z - z_off) - 1.0, 2));
-    } else {
-        zeta = 1.0 - std::sqrt(x * x + std::pow(std::abs(z - z_off) - 0.5, 2));
-    }
+    double z_rel = std::abs(z - z_off);
+    double zeta = (x > 0.0) ? (0.5 - std::sqrt(x * x + std::pow(z_rel - 1.0, 2))) 
+                            : (1.0 - std::sqrt(x * x + std::pow(z_rel - 0.5, 2)));
 
-    double coverage = (zeta > un::kZetaCut) ? 1.0 : (zeta / un::kZetaCut);
+    double coverage = (zeta > constants::kZetaCut) ? 1.0 : (zeta / constants::kZetaCut);
     
     static std::mt19937_64 rng(42);
     std::uniform_real_distribution<double> dist(0.0, 1.0);
-    
     return dist(rng) < (coverage * calculate_absorption_prob(e_perp, b_thick_nm));
 }
 
-void SurfaceModel::reflect(State& s, const std::vector<double>& norm) {
+void SurfaceModel::reflect(State& s, const std::vector<double>& norm, const std::vector<double>& tang) {
     static std::mt19937_64 rng(42);
     std::uniform_real_distribution<double> dist(0.0, 1.0);
 
     double p_total = std::sqrt(s.px*s.px + s.py*s.py + s.pz*s.pz);
-    
     double theta = std::asin(std::sqrt(dist(rng))); 
-    double phi = 2.0 * un::kPi * dist(rng);
+    double phi = 2.0 * constants::kPi * dist(rng);
 
-    double p_normal = p_total * std::cos(theta);
-    double p_tangent1 = p_total * std::sin(theta) * std::cos(phi);
-    double p_tangent2 = p_total * std::sin(theta) * std::sin(phi);
+    double p_n = std::cos(theta);
+    double p_t1 = std::sin(theta) * std::cos(phi);
+    double p_t2 = std::sin(theta) * std::sin(phi);
 
-    s.py = (norm[1] > 0) ? std::abs(p_normal) : -std::abs(p_normal);
-    s.px = p_tangent1;
-    s.pz = p_tangent2;
+    std::vector<double> tang_prime = {
+        norm[1] * tang[2] - norm[2] * tang[1],
+        norm[2] * tang[0] - norm[0] * tang[2],
+        norm[0] * tang[1] - norm[1] * tang[0]
+    };
+
+    double nx = p_n * norm[0] + p_t1 * tang[0] + p_t2 * tang_prime[0];
+    double ny = p_n * norm[1] + p_t1 * tang[1] + p_t2 * tang_prime[1];
+    double nz = p_n * norm[2] + p_t1 * tang[2] + p_t2 * tang_prime[2];
+
+    double mag = std::sqrt(nx*nx + ny*ny + nz*nz);
+    s.px = (nx / mag) * p_total;
+    s.py = (ny / mag) * p_total;
+    s.pz = (nz / mag) * p_total;
 }
 
 } // namespace ucntrap

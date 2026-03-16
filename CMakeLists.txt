@@ -13,6 +13,7 @@ add_library(ucntrap_core
     src/numeric/integrator.cpp
     src/physics/dagger.cpp
     src/physics/planar_halbach_field.cpp
+    src/physics/surface_model.cpp
     src/physics/trap_halbach_field.cpp
     src/source/random_source.cpp
 )

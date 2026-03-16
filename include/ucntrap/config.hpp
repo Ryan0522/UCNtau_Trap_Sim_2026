@@ -5,6 +5,8 @@
 
 namespace ucntrap {
  
+enum class DaggerMode { Fast, Slow, Segmented };
+
 struct SimulationConfig {
     double dt = 1.0e-4;
     std::size_t ntraj = 1000;
@@ -38,6 +40,9 @@ struct SimulationConfig {
     double bthick = 5.59909;
     double defect = 7.0e-5;
     double heat_mult = 1.0;
+
+    DaggerMode dagger_mode = DaggerMode::Fast;
+    double wall_loss_prob = 3.0e-4; // Al absorption probability
 };
 
 } // namespace ucntrap
