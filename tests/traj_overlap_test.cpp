@@ -27,7 +27,7 @@ void run_overlap_test(const std::string& model_name, const std::string& ref_file
     ucntrap::State s = ucntrap::PenTrackReader::parse_line(init_line);
 
     std::ifstream ref_file(ref_file_path);
-    std::ofstream out("./tests/" + model_name + "_comparison.csv");
+    std::ofstream out("./tests/files/" + model_name + "_comparison.csv");
     out << "t,modern_x,modern_y,modern_z,legacy_x,legacy_y,legacy_z\n";
 
     std::string header; std::getline(ref_file, header);
@@ -44,7 +44,7 @@ void run_overlap_test(const std::string& model_name, const std::string& ref_file
 }
 
 int main() {
-    run_overlap_test("trap", "./tests/legacy_traj.txt");
-    run_overlap_test("planar", "./tests/legacy_traj_planar.txt");
+    run_overlap_test("trap", "./tests/files/legacy_traj.txt");
+    run_overlap_test("planar", "./tests/files/legacy_traj_planar.txt");
     return 0;
 }

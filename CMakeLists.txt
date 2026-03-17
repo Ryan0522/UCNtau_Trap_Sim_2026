@@ -56,7 +56,11 @@ target_link_libraries(ucntrap PRIVATE ucntrap_core)
 
 # --- 7. testing ---
 enable_testing()
+
 add_executable(traj_overlap_test tests/traj_overlap_test.cpp)
 target_link_libraries(traj_overlap_test PRIVATE ucntrap_core)
-
 add_test(NAME PhysicsOverlap COMMAND traj_overlap_test)
+
+add_executable(liouville_test tests/liouville_test.cpp)
+target_link_libraries(liouville_test PRIVATE ucntrap_core)
+add_test(NAME LiouvilleStability COMMAND liouville_test)

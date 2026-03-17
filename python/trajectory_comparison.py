@@ -53,11 +53,11 @@ def analyze_divergence(field_type, file_path):
 
     plt.tight_layout()
 
-    save_path = f'./results/{field_type}_divergence_plot.png'
+    save_path = f'./results/test/{field_type}_divergence_plot.png'
     plt.savefig(save_path, dpi=300)
     print(f"Figure saved to: {save_path}")
     plt.show()
 
 if __name__ == "__main__":
-    analyze_divergence('planar', './tests/planar_comparison.csv')
-    analyze_divergence('trap', './tests/trap_comparison.csv')
+    analyze_divergence('planar', './tests/files/planar_comparison.csv')
+    analyze_divergence('trap', './tests/files/trap_comparison.csv')
