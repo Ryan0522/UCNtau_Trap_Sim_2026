@@ -78,7 +78,10 @@ bool Dagger::check_collision(const State& s, double t) const {
     }
 
     // 2. Check if hit is on Dagger
-    if (x > cd::kXMin && x < cd::kXMax && zeta > 0.0 && z < (cd::kBaseZ + z_off + cd::kDaggerZShift)) {
+    const double z_bottom = cd::kBaseZ + z_off;
+    const double z_top = cd::kBaseZ + z_off + cd::kDaggerZShift;
+    if (x > cd::kXMin && x < cd::kXMax && zeta > 0.0 && 
+        z >= z_bottom && z <= z_top) {
         return true;
     }
 
@@ -106,7 +109,10 @@ HitInfo Dagger::classify_crossing(double x, double z, double t_exp) const {
         double zeta = (x > 0) ? (0.5 - std::sqrt(x*x + std::pow(z_rel - 1.0, 2))) 
                               : (1.0 - std::sqrt(x*x + std::pow(z_rel - 0.5, 2)));
         
-        if (zeta > 0.0 && z < (cd::kBaseZ + z_off + cd::kDaggerZShift)) {
+        const double z_bottom = cd::kBaseZ + z_off;
+        const double z_top = cd::kBaseZ + z_off + cd::kDaggerZShift;
+
+        if (zeta > 0.0 && z >= z_bottom && z <= z_top) {
             return {HitType::Dagger, x, z, z_off};
         }
     }

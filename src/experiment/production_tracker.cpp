@@ -56,6 +56,7 @@ Result ProductionTracker::run(const State& initial) {
     // Set death time and clean time
     res.death_time = 9999;
     const double cleaning_time = config_.cleaning_time;
+    const double holding_time = config_.hold_time;
 
     State prev_s = s;
 
@@ -85,8 +86,35 @@ Result ProductionTracker::run(const State& initial) {
             goto finalize;
         }
     }
+
+    // 3. Holding Phase
+    const int holding_steps = static_cast<int>(holding_time / config_.dt);
+    for (int i = 0; i < holding_steps; ++i) {
+        prev_s = s;
+        integrator_.step(s, t, config_.dt, field_model_);
+        t += config_.dt;
+
+        // defect
+        maybe_apply_defect(s, t);
+
+        // Check if raised cleaning
+        const double raised_clean_z = cd::kBaseZ + config_.raised_cleaning_height;
+        const bool crossed_raised_clean =
+            (prev_s.z < raised_clean_z && s.z > raised_clean_z) ||
+            (prev_s.z > raised_clean_z && s.z < raised_clean_z);
+
+        if (crossed_raised_clean && s.y > 0.0) {
+            res.code = -3; // raised clean
+            goto finalize;
+        }
+
+        if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z)) {
+            res.code = -4;
+            goto finalize;
+        }
+    }
     
-    // 3. Detection Loop
+    // 4. Detection Loop
     while (t - cleaning_time < 3000.0) { // Max simulation time
         prev_s = s;
         integrator_.step(s, t, config_.dt, field_model_);

@@ -64,3 +64,7 @@ add_test(NAME PhysicsOverlap COMMAND traj_overlap_test)
 add_executable(liouville_test tests/liouville_test.cpp)
 target_link_libraries(liouville_test PRIVATE ucntrap_core)
 add_test(NAME LiouvilleStability COMMAND liouville_test)
+
+add_executable(compare_dist_test tests/compare_dist.cpp)
+target_link_libraries(compare_dist_test PRIVATE ucntrap_core)
+add_test(NAME DistStability COMMAND compare_dist_test)

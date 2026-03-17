@@ -14,7 +14,7 @@ SimulationConfig load_config(const std::string& path) {
     config.ntraj = node["simulation"]["ntraj"].as<std::size_t>();
     config.seed = node["simulation"]["seed"].as<unsigned long long>();
 
-    // --- 2. simulation configurations --- [cite: 1127]
+    // --- 2. simulation configurations ---
     config.source_type = node["components"]["source_type"].as<std::string>();
     config.field_model = node["components"]["field_model"].as<std::string>();
     config.integrator = node["components"]["integrator"].as<std::string>();
@@ -26,14 +26,14 @@ SimulationConfig load_config(const std::string& path) {
     else if (d_mode == "Slow") config.dagger_mode = DaggerMode::Slow;
     else if (d_mode == "Segmented") config.dagger_mode = DaggerMode::Segmented;
 
-    // --- 3. file path and IO --- [cite: 1130-1131]
+    // --- 3. file path and IO ---
     config.neutron_init_file = node["io"]["neutron_init_file"].as<std::string>();
     config.x_trace_file = node["io"]["x_trace_file"].as<std::string>();
     config.y_trace_file = node["io"]["y_trace_file"].as<std::string>();
     config.z_trace_file = node["io"]["z_trace_file"].as<std::string>();
     config.output_prefix = node["io"]["output_prefix"].as<std::string>();
 
-    // --- 4. experiment parameters --- [cite: 1131-1132]
+    // --- 4. experiment parameters ---
     config.cleaning_time = node["experiment"]["cleaning_time"].as<double>();
     config.cleaning_height = node["experiment"]["cleaning_height"].as<double>();
     config.raised_cleaning_height = node["experiment"]["raised_cleaning_height"].as<double>();

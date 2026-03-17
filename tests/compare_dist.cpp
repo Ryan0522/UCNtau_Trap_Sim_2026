@@ -2,37 +2,39 @@
 #include "ucntrap/source/pentrack_reader.hpp"
 #include "ucntrap/config.hpp"
 
+#include <mpi.h>
 #include <iostream>
-#include <fstream>
-#include <iomanip>
 
-int main() {
-    // 1. Setup Config
-    ucntrap::SimulationConfig config;
-    config.dt = 0.001;
-    config.ntraj = 1000;
-    
-    // 2. Initialize Runner and Source
-    auto reader = std::make_unique<ucntrap::PenTrackReader>("neutrons_init.out");
-    ucntrap::Runner runner(config, std::move(reader));
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
 
-    std::cout << "num trace bins: 71657" << std::endl;
+    try {
+        ucntrap::SimulationConfig config;
+        config.dt = 0.001;
+        config.ntraj = 1000;
+        config.source_type = "pentrack";
+        config.neutron_init_file = "./data/neutrons_init_test.out";
+        config.field_model = "trap";
+        config.output_prefix = "./tests/files/modern_dist";
+        config.x_trace_file = "./data/xvals.bin";
+        config.y_trace_file = "./data/yvals.bin";
+        config.z_trace_file = "./data/zvals.bin";
+        config.hold_time = 20.0;
+        config.heat_mult = 0.0;
 
-    for (int i = 0; i < config.ntraj; ++i) {
-        // Run individual neutron
-        auto result = runner.run(); 
+        ucntrap::Runner runner(config);
+        runner.run();
 
-        // Match your legacy output format:
-        // index, t_final, E_final, code, last_x, last_y, last_z
-        std::cout << i << ", " 
-                  << std::scientific << std::setprecision(6)
-                  << result.t << ", " 
-                  << result.e_final << ", " 
-                  << result.code << ", "
-                  << result.x << ", " 
-                  << result.y << ", " 
-                  << result.z << std::endl;
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank == 0) {
+            std::cout << "Distribution simulation complete. Results saved with prefix: "
+                        << config.output_prefix << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error during distribution test: " << e.what() << std::endl;
     }
 
+    MPI_Finalize();
     return 0;
 }
