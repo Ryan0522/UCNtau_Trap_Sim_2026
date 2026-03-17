@@ -18,10 +18,10 @@ struct SimulationConfig {
     std::string tracker = "production"; // production, cleaning, Lyap (legacy) 
     std::string writer = "legacy_binary";
 
-    std::string neutron_init_file;
-    std::string x_trace_file;
-    std::string y_trace_file;
-    std::string z_trace_file;
+    std::string neutron_init_file = "data/neutrons_init_test.out";
+    std::string x_trace_file = "data/xvals.bin";
+    std::string y_trace_file = "data/yvals.bin";
+    std::string z_trace_file = "data/zvals.bin";
     std::string output_prefix = "results/run";
 
     double cleaning_time = 50.0;
