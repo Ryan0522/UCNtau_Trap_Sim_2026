@@ -13,37 +13,49 @@ def analyze_divergence(field_type, file_path):
         (df['modern_z'] - df['legacy_z'])**2
     )
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+    fig, axes = plt.subplots(4, 1, figsize=(10, 15), sharex=True)
 
-    ax1.plot(df['t'], df['modern_x'], label='Modern Engine', alpha=0.8)
-    ax1.plot(df['t'], df['legacy_x'], label='Legacy Engine', linestyle='--', color='orange', alpha=0.8)
-    ax1.set_ylabel('X Position (m)')
-    ax1.set_title('Trajectory Comparison: Modern vs Legacy')
-    ax1.legend()
-    ax1.grid(True)
+    coords = ['x', 'y', 'z']
+    colors = ['tab:blue', 'tab:green', 'tab:orange']
 
-    ax2.plot(df['t'], df['error'], color='red', label='Euclidean Distance Error')
-    ax2.set_yscale('log')
-    ax2.set_ylabel('Error (m) - Log Scale')
-    ax2.set_xlabel('Time (s)')
-    ax2.set_title('Error Divergence Analysis')
-    ax2.grid(True, which="both", ls="-", alpha=0.5)
-    ax2.legend()
+    for i, coord in enumerate(coords):
+        axes[i].plot(df['t'], df[f'modern_{coord}'], label=f'Modern {coord.upper()}', alpha=0.8, color=colors[i])
+        axes[i].plot(df['t'], df[f'legacy_{coord}'], label=f'Legacy {coord.upper()}', 
+                     linestyle='--', color='black', alpha=0.6)
+        axes[i].set_ylabel(f'{coord.upper()} Position (m)')
+        axes[i].legend(loc='upper right')
+        axes[i].grid(True, alpha=0.3)
+
+    axes[3].plot(df['t'], df['error'], color='red', label='Euclidean Error')
+    axes[3].set_yscale('log')
+    axes[3].set_ylabel('Error (m) - Log Scale')
+    axes[3].set_xlabel('Time (s)')
+    axes[3].set_title(f'[{field_type.upper()}] Error Divergence Analysis')
+    axes[3].grid(True, which="both", ls="-", alpha=0.5)
+    axes[3].axhline(y=1e-3, color='gray', linestyle=':', label='1mm Threshold')
+    axes[3].legend(loc='upper left')
 
     try:
-        t_start = df[df['error'] > 1e-10]['t'].iloc[0]
-        t_end = df[df['error'] > 1e-5]['t'].iloc[0]
-        growth_rate = (np.log(1e-5) - np.log(1e-10)) / (t_end - t_start)
-        lyapunov_time = 1 / growth_rate
-        print(f"Estimated Lyapunov Time: {lyapunov_time:.2f} seconds")
-    except:
-        print("Error growth is too small or too large to estimate Lyapunov Time.")
+        valid_growth = df[(df['error'] > 1e-10) & (df['error'] < 1e-3)]
+        if len(valid_growth) > 100:
+            t_start = valid_growth['t'].iloc[0]
+            t_end = valid_growth['t'].iloc[-1]
+            err_start = valid_growth['error'].iloc[0]
+            err_end = valid_growth['error'].iloc[-1]
+            
+            growth_rate = (np.log(err_end) - np.log(err_start)) / (t_end - t_start)
+            lyapunov_time = 1 / growth_rate
+            print(f"[{field_type}] Estimated Lyapunov Time: {lyapunov_time:.2f} seconds")
+        else:
+            print(f"[{field_type}] Divergence occurred too fast for Lyapunov estimation.")
+    except Exception as e:
+        print(f"[{field_type}] Lyapunov estimation failed: {e}")
 
     plt.tight_layout()
-    if field_type == 'planar':
-        plt.savefig('./results/planar_divergence_plot.png')
-    else:
-        plt.savefig('./results/trap_divergence_plot.png')
+
+    save_path = f'./results/{field_type}_divergence_plot.png'
+    plt.savefig(save_path, dpi=300)
+    print(f"Figure saved to: {save_path}")
     plt.show()
 
 if __name__ == "__main__":

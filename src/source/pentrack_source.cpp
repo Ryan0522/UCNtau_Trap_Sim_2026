@@ -76,10 +76,10 @@ State PenTrackReader::parse_line(const std::string& line) {
     }
 
     State s{};
-    s.x  = -values[0];
+    s.x  =  -values[0]; // NEED FUTURE INVESTIGATION
     s.y  =  values[1];
     s.z  =  values[2];
-    s.px = -values[3] * constants::kMassN;
+    s.px =  -values[3] * constants::kMassN; // NEED FUTURE INVESTIGATION
     s.py =  values[4] * constants::kMassN;
     s.pz =  values[5] * constants::kMassN;
     return s;

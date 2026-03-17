@@ -27,7 +27,7 @@ FieldEval eval_planar_halbach(double x, double z,
     FieldEval out{};
 
     const double A = 4.0 * b_rem / (constants::kPi * std::sqrt(2.0));
-    const double z_shift = z + 1.5;   // 你原本的 offset
+    const double z_shift = z + 1.5;
     const double zz = z_shift;
 
     for (int n = 1; n <= n_terms; ++n) {
