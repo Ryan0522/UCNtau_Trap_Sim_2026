@@ -53,3 +53,10 @@ target_link_libraries(ucntrap_py PRIVATE ucntrap_core)
 # --- 6. CLI executables ---
 add_executable(ucntrap src/cli/main.cpp)
 target_link_libraries(ucntrap PRIVATE ucntrap_core)
+
+# --- 7. testing ---
+enable_testing()
+add_executable(physics_overlap_test tests/physics_overlap_test.cpp)
+target_link_libraries(physics_overlap_test PRIVATE ucntrap_core)
+
+add_test(NAME PhysicsOverlap COMMAND physics_overlap_test)

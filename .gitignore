@@ -12,7 +12,7 @@ CTestTestfile.cmake
 Testing/
 
 # Data & Results
-results/
+results/*.csv
 data/neutrons_init.out
 
 # Visual Studio

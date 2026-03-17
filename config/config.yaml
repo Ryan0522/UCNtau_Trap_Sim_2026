@@ -43,6 +43,6 @@ physics:
   thetapow: 0.275457
   zetacut: 0.0127203
   bthick: 5.59909
-  defect: 0.00007
+  defect: 0
   heat_mult: 1.0
   wall_loss_prob: 0.0003
