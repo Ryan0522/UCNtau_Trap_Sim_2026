@@ -68,9 +68,11 @@ pybind11_add_module(ucntrap_py src/python_wrapper.cpp)
 target_link_libraries(ucntrap_py PRIVATE ucntrap_core)
 
 # Python wrapper exported to /python
-set_target_properties(ucntrap_py PROPERTIES 
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/python
-)
+foreach(config ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${config} CONFIG_UPPER)
+    set_target_properties(ucntrap_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${BASE_PY_DIR}")
+endforeach()
+set_target_properties(ucntrap_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${BASE_PY_DIR}")
 
 # --- 6. main cli (CLI) --- [cite: 8, 108]
 add_executable(ucntrap src/cli/main.cpp)

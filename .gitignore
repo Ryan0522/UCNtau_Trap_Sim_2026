@@ -2,6 +2,7 @@
 build/
 out/
 bin/
+venv/
 
 # CMake
 CMakeCache.txt
