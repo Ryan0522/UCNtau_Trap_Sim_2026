@@ -3,12 +3,30 @@ project(ucntrap VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# --- 1. Directories setting ---
+# Remove multi-configuration (Debug, Release, etc.)
+set(BASE_BIN_DIR "${CMAKE_SOURCE_DIR}/bin")
+set(BASE_LIB_DIR "${CMAKE_SOURCE_DIR}/lib")
+set(BASE_PY_DIR  "${CMAKE_SOURCE_DIR}/python")
+
+foreach(config ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${config} CONFIG_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${BASE_BIN_DIR}")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${BASE_LIB_DIR}")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${BASE_LIB_DIR}")
+endforeach()
+
+# All .exe to /bin
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+# All lib to /lib
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 
 include(FetchContent)
 
-# --- 1. Fetch yaml-cpp ---
+# --- 2. fetch (yaml-cpp & pybind11) --- 
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
@@ -16,18 +34,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-# --- 2. Fetch pybind11 ---
 FetchContent_Declare(
   pybind11
   GIT_REPOSITORY https://github.com/pybind/pybind11.git
-  GIT_TAG v2.11.1 # 建議指定版本
+  GIT_TAG v2.11.1
 )
 FetchContent_MakeAvailable(pybind11)
 
-# --- 3. setup MPI ---
+# --- 3. set MPI --- 
 find_package(MPI REQUIRED)
 
-# --- 4. core libraries ---
+# --- 4. (ucntrap_core) --- 
 add_library(ucntrap_core
     src/core/config.cpp
     src/core/runner.cpp
@@ -46,25 +63,32 @@ add_library(ucntrap_core
 target_include_directories(ucntrap_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ucntrap_core PUBLIC yaml-cpp::yaml-cpp MPI::MPI_CXX)
 
-# --- 5. Python module ---
+# --- 5. Python wrapper (ucntrap_py) --- 
 pybind11_add_module(ucntrap_py src/python_wrapper.cpp)
 target_link_libraries(ucntrap_py PRIVATE ucntrap_core)
 
-# --- 6. CLI executables ---
+# Python wrapper exported to /python
+set_target_properties(ucntrap_py PROPERTIES 
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/python
+)
+
+# --- 6. main cli (CLI) --- [cite: 8, 108]
 add_executable(ucntrap src/cli/main.cpp)
 target_link_libraries(ucntrap PRIVATE ucntrap_core)
 
-# --- 7. testing ---
+# --- 7. testing functions (bin/tests) --- 
 enable_testing()
+function(add_ucn_test name src)
+    add_executable(${name} ${src})
+    target_link_libraries(${name} PRIVATE ucntrap_core)
+    foreach(config ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${config} CONFIG_UPPER)
+        set_target_properties(${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER} "${BASE_BIN_DIR}/tests")
+    endforeach()
+    set_target_properties(${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${BASE_BIN_DIR}/tests")
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
 
-add_executable(traj_overlap_test tests/traj_overlap_test.cpp)
-target_link_libraries(traj_overlap_test PRIVATE ucntrap_core)
-add_test(NAME PhysicsOverlap COMMAND traj_overlap_test)
-
-add_executable(liouville_test tests/liouville_test.cpp)
-target_link_libraries(liouville_test PRIVATE ucntrap_core)
-add_test(NAME LiouvilleStability COMMAND liouville_test)
-
-add_executable(compare_dist_test tests/compare_dist.cpp)
-target_link_libraries(compare_dist_test PRIVATE ucntrap_core)
-add_test(NAME DistStability COMMAND compare_dist_test)
+add_ucn_test(traj_overlap_test tests/traj_overlap_test.cpp)
+add_ucn_test(liouville_test tests/liouville_test.cpp)
+add_ucn_test(compare_dist_test tests/compare_dist.cpp)

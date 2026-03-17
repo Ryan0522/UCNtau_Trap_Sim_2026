@@ -37,6 +37,10 @@ data/neutrons_init.out
 *.exe
 *.out
 *.app
+*.pyd
+*.exp
+*.so
+*.log
 
 # Debug symbols / logs
 *.pdb

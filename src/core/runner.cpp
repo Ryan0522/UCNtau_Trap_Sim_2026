@@ -74,10 +74,32 @@ int Runner::run() const {
     CsvResultWriter writer(out_path);
 
     // 7. Simulation loop
+    size_t completed = 0;
+    const int bar_width = 50;
+    const size_t update_interval = std::max(size_t(1), my_ntraj / 20);
+
     while (source->has_next()) {
         State s = source->next();
         Result res = tracker.run(s);
         writer.write(res);
+        completed++;
+
+        if (rank == 0 && (completed % update_interval == 0 || completed == my_ntraj)) {
+            float progress = static_cast<float>(completed) / my_ntraj;
+            int pos = static_cast<int>(bar_width * progress);
+
+            std::cout << "\r[" ;
+            for (int i = 0; i < bar_width; ++i) {
+                if (i < pos) std::cout << "=";
+                else if (i == pos) std::cout << ">";
+                else std::cout << " ";
+            }
+            std::cout << "] " << int(progress * 100.0) << "%" << std::flush;
+        }
+    }
+
+    if (rank == 0) {
+        std::cout << std::endl;
     }
 
     return 0;

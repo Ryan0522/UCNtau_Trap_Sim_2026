@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
         config.z_trace_file = "./data/zvals.bin";
         config.hold_time = 20.0;
         config.heat_mult = 0.0;
+        config.dip_end_times = {20., 270.};
 
         ucntrap::Runner runner(config);
         runner.run();

@@ -30,7 +30,7 @@ struct SimulationConfig {
     double hold_time = 20.0; // Calculate First dip time from here
 
     std::vector<double> dip_heights = {0.49, 0.01};
-    std::vector<double> dip_end_times = {0, 250}; // "END TIME", from hold time (first one is 0.0)
+    std::vector<double> dip_end_times = {20, 270}; // "END TIME", from cleaning time (first one is 0.0)
 
     double ecut = 7.2092;
     double epow = 1.17727;
