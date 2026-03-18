@@ -7,11 +7,13 @@
 namespace ucntrap {
 
 CsvResultWriter::CsvResultWriter(const std::string& path)
-    : out_(path) {
+    : out_(path), buffer_(1 << 20) {
     if (!out_.is_open()) {
         throw std::runtime_error(
             "CsvResultWriter: unable to open out file '" + path + "'"
         );
+
+        out_.rdbuf()->pubsetbuf(buffer_.data(), static_cast<std::streamsize>(buffer_.size()));
     }
 }
 

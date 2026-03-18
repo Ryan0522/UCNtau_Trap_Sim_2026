@@ -75,7 +75,7 @@ Force TrapHalbachField::force(const State& s, double t) const {
         double sum_k_cos = 0.0;
         double sum_k_sin = 0.0;
 
-        for (int idx = 1; idx <= ct::kNSumTerms; ++idx) {
+        for (int idx = 0; idx < ct::kNSumTerms; ++idx) {
             const double k = k_n_[idx];
             const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
 
@@ -190,7 +190,7 @@ double TrapHalbachField::potential(const State& s, double t) const {
     double sum_cos = 0.0;
     double sum_sin = 0.0;
 
-    for (int idx = 1; idx <= ct::kNSumTerms; ++idx) {
+    for (int idx = 0; idx < ct::kNSumTerms; ++idx) {
         const double k = k_n_[idx];
         const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
 

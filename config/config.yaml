@@ -3,7 +3,7 @@
 # --- 1. simulation control ---
 simulation:
   dt: 0.001
-  ntraj: 100
+  ntraj: 1000
   seed: 1
 
 # --- 2. simulation specs ---

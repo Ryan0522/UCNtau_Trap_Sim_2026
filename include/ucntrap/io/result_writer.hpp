@@ -2,6 +2,7 @@
 #include "ucntrap/experiment/tracker.hpp"
 #include <fstream>
 #include <string>
+#include <vector>
 
 namespace ucntrap {
  
@@ -15,14 +16,13 @@ public:
 class CsvResultWriter final : public ResultWriter {
 public:
     explicit CsvResultWriter(const std::string& path);
-
     void write(const Result& result) override;
     void flush() override;
 
 private:
     void write_header();
-    
     std::ofstream out_;
+    std::vector<char> buffer_;
     bool header_written_ = false;
 };
 
