@@ -1,5 +1,7 @@
 #pragma once
 #include "ucntrap/physics/field_model.hpp"
+#include "ucntrap/constants.hpp"
+#include <array>
 #include <vector>
 
 namespace ucntrap {
@@ -15,9 +17,13 @@ public:
     double potential(const State& s, double t) const override;
 
 private:
+    static constexpr int kTerms = constants::trap::kNSumTerms;
     double heat_mult_;
-    
     const std::vector<double> tx_, ty_, tz_;
+
+    double A_ = 0.0;
+    std::array<double, kTerms> k_n_{};
+    std::array<double, kTerms> amp_prefactor_{};
 
     void get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const;
 };

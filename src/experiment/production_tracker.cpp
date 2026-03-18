@@ -198,12 +198,12 @@ Result ProductionTracker::run(const State& initial) {
                 // Surviving physical hit: reflect from the pre-hit state.
                 s = prev_s;
 
-                const std::vector<double> norm =
+                const SurfaceModel::Vec3 norm =
                     (prev_s.y > 0.0 && prev_s.py < 0.0)
-                        ? std::vector<double>{0.0, 1.0, 0.0}
-                        : std::vector<double>{0.0, -1.0, 0.0};
+                        ? SurfaceModel::Vec3{0.0, 1.0, 0.0}
+                        : SurfaceModel::Vec3{0.0, -1.0, 0.0};
 
-                const std::vector<double> tang = {0.0, 0.0, 1.0};
+                const SurfaceModel::Vec3 tang = {0.0, 0.0, 1.0};
 
                 SurfaceModel::reflect(s, norm, tang, rng_);
 
@@ -238,10 +238,14 @@ finalize:
 }   
 
 void ProductionTracker::maybe_apply_defect(State& s, double t) {
+    if (config_.defect <= 0.0 || rng_.uniform01() > config_.defect) {
+        return;
+    }
+    
     const double totalU = field_model_.potential(s, t);
     const bool can_have_defect = (totalU - constants::kMassN * constants::kEarthG * s.z) * 10000.0 / constants::kMuN >= 155.340528314;
 
-    if (can_have_defect && rng_.uniform01() <= config_.defect) {
+    if (can_have_defect) {
         const double p_mag = std::sqrt(s.px*s.px + s.py*s.py + s.pz*s.pz);
 
         const double phi = rng_.uniform01() * constants::kPi;

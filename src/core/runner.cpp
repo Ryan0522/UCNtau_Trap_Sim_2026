@@ -25,16 +25,15 @@ int Runner::run() const {
     RandomEngine rng(config_.seed + rank);
 
     // 1. Calculate neutron counts in this rank
-    size_t total_ntraj = config_.ntraj;
-    size_t my_ntraj = total_ntraj / size;
-    size_t remainder = total_ntraj % size;
+    const size_t total_ntraj = config_.ntraj;
+    const size_t base = total_ntraj / static_cast<size_t>(size);
+    const size_t remainder = total_ntraj % static_cast<size_t>(size);
 
-    if (rank == size - 1) {
-        my_ntraj += remainder;
-    }
+    const size_t my_ntraj = base + (static_cast<size_t>(rank) < remainder ? 1 : 0);
 
-    // 2. Calculate offset in reading PENTrack source
-    size_t global_offset = 1 + (rank * (total_ntraj / size));
+    const size_t global_offset =
+        1 + static_cast<size_t>(rank) * base
+        + std::min(static_cast<size_t>(rank), remainder);
 
     if (rank == 0) {
         print_config(config_, size, total_ntraj);

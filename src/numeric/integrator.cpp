@@ -10,21 +10,23 @@ namespace Symp = constants::numeric;
 class SymplecticMomentumIntegrator final : public Integrator {
 public:
     void step(State& s, double t, double dt, const FieldModel& field) const override {
+        constexpr double inv_mass = 1.0 / constants::kMassN;
+        
         double local_t = t;
 
         for (std::size_t n = 0; n < 4; ++n) {
             const Force f = field.force(s, local_t);
+            const double kick  = Symp::kSymplecticB[n] * dt;
+            const double drift = Symp::kSymplecticA[n] * dt * inv_mass;
 
-            // kick
-            s.px += Symp::kSymplecticB[n] * f.fx * dt;
-            s.py += Symp::kSymplecticB[n] * f.fy * dt;
-            s.pz += Symp::kSymplecticB[n] * f.fz * dt;
+            s.px += kick * f.fx;
+            s.py += kick * f.fy;
+            s.pz += kick * f.fz;
 
-            // drift
-            s.x += Symp::kSymplecticA[n] * s.px * dt / constants::kMassN;
-            s.y += Symp::kSymplecticA[n] * s.py * dt / constants::kMassN;
-            s.z += Symp::kSymplecticA[n] * s.pz * dt / constants::kMassN;
-
+            s.x += drift * s.px;
+            s.y += drift * s.py;
+            s.z += drift * s.pz;
+            
             local_t += Symp::kSymplecticA[n] * dt;
         }
     }

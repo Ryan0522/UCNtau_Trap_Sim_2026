@@ -9,6 +9,7 @@
 namespace ucntrap {
 
 namespace cs = constants::surface;
+using Vec3 = std::array<double, 3>;
 
 namespace {
 using ComplexMat = std::array<std::complex<double>, 4>;
@@ -43,8 +44,7 @@ ComplexMat m_matrix(std::complex<double> kn,
     return res;
 }
 
-std::vector<double> cross3(const std::vector<double>& a,
-                           const std::vector<double>& b) {
+std::vector<double> cross3(const Vec3& a, const Vec3& b) {
     return {
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],
@@ -137,8 +137,8 @@ bool SurfaceModel::check_absorption(double e_perp,
 }
 
 void SurfaceModel::reflect(State& s,
-                           const std::vector<double>& norm,
-                           const std::vector<double>& tang,
+                           const Vec3& norm,
+                           const Vec3& tang,
                            RandomEngine& rng) {
     const double p_total = std::sqrt(s.px * s.px + s.py * s.py + s.pz * s.pz);
 

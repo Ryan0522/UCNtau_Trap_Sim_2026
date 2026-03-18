@@ -11,7 +11,19 @@ TrapHalbachField::TrapHalbachField(double heat_mult,
                      const std::vector<double>& tx,
                      const std::vector<double>& ty,
                      const std::vector<double>& tz)
-    : heat_mult_(heat_mult), tx_(tx), ty_(ty), tz_(tz) {}
+    : heat_mult_(heat_mult), tx_(tx), ty_(ty), tz_(tz)
+{
+    A_ = 4.0 * ct::kBRem / (constants::kPi * std::sqrt(2.0));
+
+    for (int n = 1; n <= ct::kNSumTerms; ++n) {
+        const int idx = n - 1;
+        const double odd = 4.0 * n - 3.0;
+        const double sign = (n % 2 == 0) ? 1.0 : -1.0;
+
+        k_n_[idx] = 2.0 * constants::kPi * odd / ct::kMagSpace;
+        amp_prefactor_[idx] = sign / odd * (1.0 - std::exp(-k_n_[idx] * ct::kMagThick));
+    }
+}
 
 void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const {
     
@@ -38,8 +50,6 @@ Force TrapHalbachField::force(const State& s, double t) const {
     double x, y, z;
     get_shifted_coords(s, t, x, y, z);
 
-    double A = 4.0 * ct::kBRem / (constants::kPi * std::sqrt(2.0));
-
     const double expkx = std::exp(-ct::kKappa * x);
     const double inv = 1.0 / (1.0 + expkx);
 
@@ -65,29 +75,24 @@ Force TrapHalbachField::force(const State& s, double t) const {
         double sum_k_cos = 0.0;
         double sum_k_sin = 0.0;
 
-        for (int n = 1; n <= ct::kNSumTerms; ++n) {
-            const double odd = 4.0 * n - 3.0;
-            const double k_n = 2.0 * constants::kPi * odd / ct::kMagSpace;
-            const double sign = (n % 2 == 0) ? 1.0 : -1.0;
+        for (int idx = 1; idx <= ct::kNSumTerms; ++idx) {
+            const double k = k_n_[idx];
+            const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
 
-            const double amp = sign / odd
-                             * (1.0 - std::exp(-k_n * ct::kMagThick))
-                             * std::exp(-k_n * zeta);
-
-            const double c = std::cos(k_n * eta);
-            const double s_eta = std::sin(k_n * eta);
+            const double c = std::cos(k * eta);
+            const double s_eta = std::sin(k * eta);
 
             const double cos_term = amp * c;
             const double sin_term = amp * s_eta;
 
             sum_cos += cos_term;
             sum_sin += sin_term;
-            sum_k_cos += k_n * cos_term;
-            sum_k_sin += k_n * sin_term;
+            sum_k_cos += k * cos_term;
+            sum_k_sin += k * sin_term;
         }
 
-        const double b_zeta = A * sum_cos;
-        const double b_eta  = A * sum_sin;
+        const double b_zeta = A_ * sum_cos;
+        const double b_eta  = A_ * sum_sin;
         const double b_hold = ct::kBHold * (r + R) / safe_rho;
 
         const double b_tot = std::sqrt(
@@ -98,11 +103,11 @@ Force TrapHalbachField::force(const State& s, double t) const {
         const double safe_b_tot = std::max(b_tot, constants::kEpsilon);
 
         // derivatives wrt (zeta, eta)
-        const double d_BZeta_0 = -A * sum_k_cos;
-        const double d_BZeta_1 = -A * sum_k_sin;
+        const double d_BZeta_0 = -A_ * sum_k_cos;
+        const double d_BZeta_1 = -A_ * sum_k_sin;
 
-        const double d_BEta_0 = -A * sum_k_sin;
-        const double d_BEta_1 =  A * sum_k_cos;
+        const double d_BEta_0 = -A_ * sum_k_sin;
+        const double d_BEta_1 =  A_ * sum_k_cos;
 
         // derivatives wrt (x, y, z)
         const double d_Bh_x = 0.0;
@@ -165,8 +170,6 @@ double TrapHalbachField::potential(const State& s, double t) const {
     // gravity uses unshifted z, matching legacy code
     const double z_grav = s.z;
 
-    const double A = 4.0 * ct::kBRem / (constants::kPi * std::sqrt(2.0));
-
     const double expkx = std::exp(-ct::kKappa * x);
     const double inv = 1.0 / (1.0 + expkx);
 
@@ -187,21 +190,16 @@ double TrapHalbachField::potential(const State& s, double t) const {
     double sum_cos = 0.0;
     double sum_sin = 0.0;
 
-    for (int n = 1; n <= ct::kNSumTerms; ++n) {
-        const double odd = 4.0 * n - 3.0;
-        const double k_n = 2.0 * constants::kPi * odd / ct::kMagSpace;
-        const double sign = (n % 2 == 0) ? 1.0 : -1.0;
+    for (int idx = 1; idx <= ct::kNSumTerms; ++idx) {
+        const double k = k_n_[idx];
+        const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
 
-        const double amp = sign / odd
-                         * (1.0 - std::exp(-k_n * ct::kMagThick))
-                         * std::exp(-k_n * zeta);
-
-        sum_cos += amp * std::cos(k_n * eta);
-        sum_sin += amp * std::sin(k_n * eta);
+        sum_cos += amp * std::cos(k * eta);
+        sum_sin += amp * std::sin(k * eta);
     }
 
-    const double b_zeta = A * sum_cos;
-    const double b_eta  = A * sum_sin;
+    const double b_zeta = A_ * sum_cos;
+    const double b_eta  = A_ * sum_sin;
     const double b_hold = ct::kBHold * (r + R) / safe_rho;
     const double b_tot = std::sqrt(
         b_zeta * b_zeta +
