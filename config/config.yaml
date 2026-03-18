@@ -13,7 +13,7 @@ components:
   integrator: "symplectic"
   tracker: "production" # tracking logic: production, cleaning, lyap
   writer: "csv"
-  dagger_mode: "Fast" # dagger acceptance geometry: fast, slow, segmented
+  dagger_mode: "Segmented" # dagger acceptance geometry: fast, slow, segmented
 
 # --- 3. file path and IO ---
 io:
@@ -43,6 +43,6 @@ physics:
   thetapow: 0.275457
   zetacut: 0.0127203
   bthick: 5.59909
-  defect: 0
+  defect: 0.0003
   heat_mult: 1.0
   wall_loss_prob: 0.0003

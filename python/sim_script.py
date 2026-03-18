@@ -1,55 +1,61 @@
 import sys
 import os
+import argparse
 import ucntrap_py
 
-def run_simulation():
+def run():
+    # 0. Retrieve Dagger Mode
+    parser = argparse.ArgumentParser(description="UCN Production Script")
+    parser.add_argument('--mode', type=str, default='Fast',
+                        choices=['Fast', 'Slow', 'Segmented'], help="Dagger detection mode")
+    parser.add_argument('--out_dir', type=str, default='test',
+                        help="Sub-folder under results/ (e.g., 'defect2e-3')")
+    args, unknown = parser.parse_known_args()
+
+    # 1. Initialize MPI
     ucntrap_py.init_mpi(sys.argv)
 
-    try:
-        config = ucntrap_py.SimulationConfig()
+    # Use absolute path (will be ../ from current file)
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-        config.ntraj = 10000
-        config.dt = 0.001
-        config.seed = 42
-        
-        # --- 實驗參數 ---
-        config.holding_time = 20.0
-        config.cleaning_time = 50.0
-        config.dagger_mode = ucntrap_py.DaggerMode.Fast
+    # 2. Obtain Slurm Array ID
+    global_id = int(os.getenv('SLURM_ARRAY_TASK_ID', '0'))
+    hold_times = [20.0, 50.0, 100.0, 200.0, 1550.0]
 
-        # --- Directory Paths ---
-        config.neutron_init_file = "../data/neutrons_init_test.out"
-        config.x_trace_file = "../data/xvals.bin"
-        config.y_trace_file = "../data/yvals.bin"
-        config.z_trace_file = "../data/zvals.bin"
-        
-        # Output Prefix
-        config.output_prefix = "../results/python_multi_rank/sim_run"
+    ht_idx = global_id // 20
+    batch_idx = global_id % 20
+    current_ht = hold_times[ht_idx]
 
-        # 3. Check folder existence
-        output_dir = os.path.dirname(config.output_prefix)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
+    # 3. Configure Simulation
+    config = ucntrap_py.SimulationConfig()
+    config.ntraj = 50000
+    config.dt = 0.001
+    config.seed = 42 + batch_idx
+    config.field_model = "trap"
+    config.hold_time = current_ht
 
-        # 4. Initialize runner
+    mode_map = {
+        'Fast': ucntrap_py.DaggerMode.Fast,
+        'Slow': ucntrap_py.DaggerMode.Slow,
+        'Segmented': ucntrap_py.DaggerMode.Segmented
+    }
+    config.dagger_mode = mode_map[args.mode]
+
+    # 4. Path fixing (absolute path)
+    config.neutron_init_file = os.path.join(base_dir, "data/neutrons_init.out")
+    config.x_trace_file = os.path.join(base_dir, "data/xvals.bin")
+    config.y_trace_file = os.path.join(base_dir, "data/yvals.bin")
+    config.z_trace_file = os.path.join(base_dir, "data/zvals.bin")
+
+    # 5. Output structure
+    output_dir = os.path.join(base_dir, "results", args.folder, f"HT_{int(current_ht)}_{args.mode}")
+    os.makedirs(output_dir, exist_ok=True)
+    config.output_prefix = os.path.join(output_dir, f"batch_{batch_idx:02d}")
+
+    # 6. Execute
+    print(f"Task {global_id}: HT={current_ht}s, Folder='{args.folder}', Mode={args.mode}")    with ucntrap_py.ostream_redirect():
         runner = ucntrap_py.Runner(config)
-
-        # 5. Simulate
-        print(f"Starting simulation with {config.ntraj} trajectories...")
-        with ucntrap_py.ostream_redirect():
-            status = runner.run()
-
-        if status == 0:
-            print(f"\nSimulation finished successfully. Results saved to: {config.output_prefix}.csv")
-        else:
-            print(f"\nSimulation exited with status: {status}")
-
-    except RuntimeError as e:
-        print(f"\nC++ Error encountered: {e}")
-    except Exception as e:
-        print(f"\nPython Error: {e}")
-
-    return 0
+        runner.run()
 
 if __name__ == "__main__":
-    run_simulation()
+    run()
