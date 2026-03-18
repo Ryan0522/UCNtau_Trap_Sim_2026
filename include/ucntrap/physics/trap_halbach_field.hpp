@@ -17,7 +17,7 @@ public:
 private:
     double heat_mult_;
     
-    const std::vector<double>& tx_, ty_, tz_;
+    const std::vector<double> tx_, ty_, tz_;
 
     void get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const;
 };

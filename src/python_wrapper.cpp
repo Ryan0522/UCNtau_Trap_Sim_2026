@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/iostream.h>
 #include <mpi.h>
 #include <vector>
 #include <string>
@@ -31,6 +32,9 @@ PYBIND11_MODULE(ucntrap_py, m) {
           py::arg("args") = std::vector<std::string>());
 
     m.doc() = "UCNtau Simulation Python Bindings";
+
+    // Converting C++ cout to Python sys.stdout
+    py::add_ostream_redirect(m, "ostream_redirect");
 
     // DaggerMode
     py::enum_<DaggerMode>(m, "DaggerMode")
