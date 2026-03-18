@@ -8,6 +8,8 @@ def run():
     parser = argparse.ArgumentParser(description="UCN Production Script")
     parser.add_argument('--mode', type=str, default='Fast',
                         choices=['Fast', 'Slow', 'Segmented'], help="Dagger detection mode")
+    parser.add_argument('--defect', type=float, default=0,
+                        help="Magnetic Field Defect Parameter")
     parser.add_argument('--out_dir', type=str, default='test',
                         help="Sub-folder under results/ (e.g., 'defect2e-3')")
     args, unknown = parser.parse_known_args()
@@ -30,6 +32,7 @@ def run():
     config = ucntrap_py.SimulationConfig()
     config.ntraj = 50000
     config.dt = 0.001
+    config.defect = args.defect
     config.seed = 42 + batch_idx
     config.field_model = "trap"
     config.hold_time = current_ht
@@ -48,12 +51,13 @@ def run():
     config.z_trace_file = os.path.join(base_dir, "data/zvals.bin")
 
     # 5. Output structure
-    output_dir = os.path.join(base_dir, "results", args.folder, f"HT_{int(current_ht)}_{args.mode}")
+    output_dir = os.path.join(base_dir, "results", args.out_dir, f"HT_{int(current_ht)}_{args.mode}")
     os.makedirs(output_dir, exist_ok=True)
     config.output_prefix = os.path.join(output_dir, f"batch_{batch_idx:02d}")
 
     # 6. Execute
-    print(f"Task {global_id}: HT={current_ht}s, Folder='{args.folder}', Mode={args.mode}")    with ucntrap_py.ostream_redirect():
+    print(f"Task {global_id}: HT={current_ht}s, Dir='{args.out_dir}', Mode={args.mode}, Defect={args.defect}")        runner = ucntrap_py.Runner(config)
+    with ucntrap_py.ostream_redirect():
         runner = ucntrap_py.Runner(config)
         runner.run()
 
