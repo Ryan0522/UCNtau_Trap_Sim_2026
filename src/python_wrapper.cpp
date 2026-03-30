@@ -65,12 +65,14 @@ PYBIND11_MODULE(ucntrap_py, m) {
         .def_readwrite("cleaning_height", &SimulationConfig::cleaning_height)
         .def_readwrite("raised_cleaning_height", &SimulationConfig::raised_cleaning_height)
         .def_readwrite("holding_time", &SimulationConfig::hold_time)
+        .def_readwrite("dip_end_times", &SimulationConfig::dip_end_times)
         .def_readwrite("dagger_mode", &SimulationConfig::dagger_mode)
         .def_readwrite("neutron_init_file", &SimulationConfig::neutron_init_file)
         .def_readwrite("x_trace_file", &SimulationConfig::x_trace_file)
         .def_readwrite("y_trace_file", &SimulationConfig::y_trace_file)
         .def_readwrite("z_trace_file", &SimulationConfig::z_trace_file)
-        .def_readwrite("output_prefix", &SimulationConfig::output_prefix);
+        .def_readwrite("output_prefix", &SimulationConfig::output_prefix)
+        .def_readwrite("array_offset", &SimulationConfig::array_offset);
 
     // Runner
     py::class_<Runner>(m, "Runner")

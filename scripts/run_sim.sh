@@ -1,22 +1,26 @@
 #!/bin/bash
 #SBATCH --job-name=UCN_Sim
+#SBATCH --account=chenyliu
+#SBATCH --partition=secondary
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=40
-#SBATCH --array=1-20
-#SBATCH --output=logs/run_%a.out
-#SBATCH --time=24:00:00
+#SBATCH --ntasks-per-node=5
+#SBATCH --array=0-19
+#SBATCH --mem=16G
+#SBATCH --output=scripts/logs/run_%a.out
+#SBATCH --time=00:10:00
 
 # 1. Load modules
+module load gcc
 module load openmpi
-module load python3
+module load python
 
 # 2. Variables from submit_all.sh
-MODE=${1:-Fast}
-DEFECT=${2:-0}
+MODE=${1:-Segmented}
+DEFECT=${2:-2e-5}
 OUT_DIR="${MODE}_def_${DEFECT}"
 
 # 3. Determine holdtime index (4 is for 1550s)
-HT_IDX=$((SLURM_ARRAY_TASK_ID / 20))
+HT_IDX=$((SLURM_ARRAY_TASK_ID / 4))
 
 # 4. Run simulation, longer time limit for 1550s
 if [ $HT_IDX -eq 4 ]; then
@@ -26,8 +30,9 @@ else
 fi
 
 # 5. execution
-cd ..
-mpirun python3 python/sim_script.py \
+cd ./python
+mpirun --bind-to none -- python3 sim_script.py  \
     --mode "$MODE" \
     --defect "$DEFECT" \
-    --out_dir "$OUT_DIR"
+    --out_dir "$OUT_DIR" \
+    --ntraj 1000

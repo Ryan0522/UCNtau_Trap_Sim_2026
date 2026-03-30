@@ -3,10 +3,13 @@ import glob
 import os
 import argparse
 import matplotlib.pyplot as plt
+import numpy as np
+
+TAU_N = 877.75
 
 def run_analysis():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--out_dir', type=str, default='test', help="The sub-folder in results/")
+    parser.add_argument('--out_dir', type=str, default='test', help="Results sub-folder")
     args = parser.parse_args()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,67 +17,111 @@ def run_analysis():
     
     hold_times = [20, 50, 100, 200, 1550]
     summary_data = []
+    all_hits_list = []
 
-    print(f"Scanning directory: {base_results_path}")
+    print(f"--- Starting Analysis for {args.out_dir} ---")
 
     for ht in hold_times:
         search_pattern = os.path.join(base_results_path, f"HT_{ht}_*", "batch_*_rank*.csv")
         files = glob.glob(search_pattern)
         
         if not files:
-            print(f"Warning: No files found for HT {ht}s at {search_pattern}")
+            print(f" [!] No files for HT {ht}s")
             continue
 
-        print(f"Processing HT {ht}s: Found {len(files)} files...")
-
-        cols_to_read = ['code', 't_final', 'e_final'] 
+        cols_to_read = ['code', 't_final', 'x_final', 'z_final'] 
         li = []
         for f in files:
             try:
-                df = pd.read_csv(f, usecols=cols_to_read)
-                li.append(df)
-            except Exception as e:
-                print(f"Error reading {f}: {e}")
+                li.append(pd.read_csv(f, usecols=cols_to_read))
+            except: continue
 
+        if not li: continue
         ht_df = pd.concat(li, axis=0, ignore_index=True)
         
         total = len(ht_df)
-        detected = len(ht_df[ht_df['code'] == 0])
-        survival_rate = detected / total if total > 0 else 0
+        detected_df = ht_df[ht_df['code'] == 0].copy()
+        detected_count = len(detected_df)
+        survival_rate = detected_count / total if total > 0 else 0
+        survival_rate_sim = survival_rate * np.exp(-ht / TAU_N)  # Adjusted for neutron decay
         
         summary_data.append({
             'hold_time': ht,
-            'total_neutrons': total,
-            'detected_neutrons': detected,
-            'survival_rate': survival_rate
+            'survival_rate': survival_rate,
+            'survival_rate_beta': survival_rate_sim,
+            'error': np.sqrt(detected_count)/total if total > 0 else 0
         })
         
-        output_file = os.path.join(base_results_path, f"integrated_HT_{ht}.csv")
-        ht_df.to_csv(output_file, index=False)
-        print(f"   Done. Survival Rate: {survival_rate:.4f}. Saved to {output_file}")
+        detected_df['ht'] = ht
+        all_hits_list.append(detected_df)
+        print(f" [+] HT {ht}s: Survival = {survival_rate:.4f} ({detected_count}/{total})")
 
-    if summary_data:
-        summary_df = pd.DataFrame(summary_data)
-        summary_path = os.path.join(base_results_path, "final_summary.csv")
-        summary_df.to_csv(summary_path, index=False)
-        print(f"\n[Success] Final summary saved to: {summary_path}")
+    if not summary_data:
+        print(" [Error] No data processed.")
+        return
 
-        # 6. 自動繪圖
-        plt.figure(figsize=(8, 6))
-        plt.errorbar(summary_df['hold_time'], summary_df['survival_rate'], 
-                     fmt='o-', capsize=5, label=f"Defect: {args.out_dir}")
-        plt.yscale('log') # 衰減通常看對數座標
-        plt.xlabel('Holding Time (s)')
-        plt.ylabel('Survival Rate (Detected / Total)')
-        plt.title(f'UCN Decay Curve - {args.out_dir}')
-        plt.grid(True, which="both", ls="-", alpha=0.5)
-        plt.legend()
+    hits_df = pd.concat(all_hits_list, ignore_index=True) if all_hits_list else None
+    summary_df = pd.DataFrame(summary_data)
+
+    # 1: Decay Curve
+    plot_decay_curve(summary_df, base_results_path, args.out_dir)
+
+    # 2: Spatial Hit Map (Overall & Comparison)
+    plot_spatial_analysis(hits_df, hold_times, base_results_path)
+
+    # 3: Arrival Time Spectrum
+    plot_arrival_times(hits_df, hold_times, base_results_path)
+
+def plot_decay_curve(df, path, label):
+    plt.figure(figsize=(8, 6))
+    plt.errorbar(df['hold_time'], df['survival_rate_beta'], yerr=df['error'],
+                 fmt='o-', markersize=8, capsize=5, elinewidth=1, label=f"Defect: {label}")
+    plt.yscale('log')
+    plt.xlabel('Holding Time (s)', fontsize=12)
+    plt.ylabel('Survival Rate', fontsize=12)
+    plt.title('UCN Storage Decay Curve', fontsize=14)
+    plt.grid(True, which="both", ls="--", alpha=0.7)
+    plt.legend()
+    plt.savefig(os.path.join(path, "decay_curve.png"), dpi=300)
+    plt.close()
+
+def plot_spatial_analysis(hits_df, hold_times, path):
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5), sharey=True)
+    
+    for i, ht in enumerate(hold_times):
+        data = hits_df[hits_df['ht'] == ht]
+        ax = axes[i]
         
-        plot_path = os.path.join(base_results_path, "decay_curve.png")
-        plt.savefig(plot_path)
-        print(f"[Success] Plot saved to: {plot_path}")
-    else:
-        print("\n[Error] No data was processed. Check your paths and file names.")
+        if not data.empty:
+            hb = ax.hexbin(data['x_final'], data['z_final'], gridsize=40, cmap='inferno', mincnt=1)
+            ax.set_title(f"HT: {ht}s (N={len(data)})")
+        else:
+            ax.set_title(f"HT: {ht}s (No Data)")
+        
+        ax.set_xlabel('X (m)')
+        if i == 0: ax.set_ylabel('Z (m)')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(path, "hit_maps_comparison.png"), dpi=300)
+    plt.close()
+
+def plot_arrival_times(hits_df, hold_times, path):
+    plt.figure(figsize=(10, 6))
+    
+    for ht in hold_times:
+        data = hits_df[hits_df['ht'] == ht]
+        if data.empty: continue
+
+        plt.hist(data['t_final'], bins=50, histtype='step', 
+                 linewidth=1.5, label=f'HT {ht}s')
+
+    plt.xlabel('Arrival Time at Dagger (s)')
+    plt.ylabel('Neutron Counts')
+    plt.title('UCN Arrival Time Spectrum (Deadtime Distribution)')
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.savefig(os.path.join(path, "arrival_times_spectrum.png"), dpi=300)
+    plt.close()
 
 if __name__ == "__main__":
     run_analysis()

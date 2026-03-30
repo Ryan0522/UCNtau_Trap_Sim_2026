@@ -1,8 +1,8 @@
 #!/bin/bash
 
-MODE="Fast"
-DEFECT="2e-3"
-OUT_DIR="defect_${DEFECT}"
+MODE="Segmented"
+DEFECT="2e-5"
+OUT_DIR="${MODE}_def_${DEFECT}"
 
 echo "--------------------------------------------------"
 echo " Launching UCN Production Pipeline"

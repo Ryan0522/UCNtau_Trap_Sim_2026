@@ -23,6 +23,7 @@ struct SimulationConfig {
     std::string y_trace_file = "data/yvals.bin";
     std::string z_trace_file = "data/zvals.bin";
     std::string output_prefix = "results/run";
+    size_t array_offset = 0;
 
     double cleaning_time = 50.0;
     double cleaning_height = 0.38;

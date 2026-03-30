@@ -32,6 +32,7 @@ SimulationConfig load_config(const std::string& path) {
     config.y_trace_file = node["io"]["y_trace_file"].as<std::string>();
     config.z_trace_file = node["io"]["z_trace_file"].as<std::string>();
     config.output_prefix = node["io"]["output_prefix"].as<std::string>();
+    config.array_offset = node["io"]["array_offset"].as<size_t>();
 
     // --- 4. experiment parameters ---
     config.cleaning_time = node["experiment"]["cleaning_time"].as<double>();

@@ -32,7 +32,7 @@ int Runner::run() const {
     const size_t my_ntraj = base + (static_cast<size_t>(rank) < remainder ? 1 : 0);
 
     const size_t global_offset =
-        1 + static_cast<size_t>(rank) * base
+        1 + config_.array_offset + (static_cast<size_t>(rank) * base)
         + std::min(static_cast<size_t>(rank), remainder);
 
     if (rank == 0) {
@@ -133,6 +133,7 @@ void Runner::print_config(SimulationConfig config, int size, int total_traj) con
     if (config_.source_type == "pentrack") {
         std::cout << "  - Init File:       " << config_.neutron_init_file << std::endl;
     }
+    std::cout << "  - Array Offset:    " << config_.array_offset << std::endl;
 
     // --- 4. Experiment Parameters ---
     std::cout << "\n [4. Experiment Parameters]" << std::endl;
