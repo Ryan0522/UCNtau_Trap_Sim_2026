@@ -27,9 +27,19 @@ void init_mpi_with_args(std::vector<std::string> args) {
     }
 }
 
+void finalize_mpi() {
+    int initialized, finalized;
+    MPI_Initialized(&initialized);
+    MPI_Finalized(&finalized);
+    if (initialized && !finalized) {
+        MPI_Finalize();
+    }
+}
+
 PYBIND11_MODULE(ucntrap_py, m) {
     m.def("init_mpi", &init_mpi_with_args, "Initialize MPI with arguments",
           py::arg("args") = std::vector<std::string>());
+    m.def("finalize_mpi", &finalize_mpi, "Finalize MPI");
 
     m.doc() = "UCNtau Simulation Python Bindings";
 
