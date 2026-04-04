@@ -5,6 +5,21 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 
+plt.style.use("seaborn-v0_8-paper")
+FIG_WIDTH = 468.0 / 72.27
+FIG_HEIGHT = FIG_WIDTH * 0.75
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.size": 12,
+    "axes.labelsize": 14,
+    "legend.fontsize": 11,
+    "xtick.labelsize": 11,
+    "ytick.labelsize": 11,
+    "axes.titlesize": 14,
+    "figure.autolayout": True,
+    "savefig.bbox": "tight",
+})
+
 TAU_N = 877.75
 
 def run_analysis():
@@ -29,7 +44,7 @@ def run_analysis():
             print(f" [!] No files for HT {ht}s")
             continue
 
-        cols_to_read = ['code', 't_final', 'x_final', 'z_final'] 
+        cols_to_read = ['code', 't_final', 'x_final', 'z_final', 'e_start', 'e_final'] 
         li = []
         for f in files:
             try:
@@ -72,8 +87,11 @@ def run_analysis():
     # 3: Arrival Time Spectrum
     plot_arrival_times(hits_df, hold_times, base_results_path)
 
+    # 4; Energy Conservation Check
+    plot_energy_conservation(hits_df, base_results_path)
+
 def plot_decay_curve(df, path, label):
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
     plt.errorbar(df['hold_time'], df['survival_rate_beta'], yerr=df['error'],
                  fmt='o-', markersize=8, capsize=5, elinewidth=1, label=f"Defect: {label}")
     plt.yscale('log')
@@ -86,7 +104,7 @@ def plot_decay_curve(df, path, label):
     plt.close()
 
 def plot_spatial_analysis(hits_df, hold_times, path):
-    fig, axes = plt.subplots(1, 5, figsize=(25, 5), sharey=True)
+    fig, axes = plt.subplots(1, 5, figsize=(FIG_WIDTH*5, FIG_HEIGHT), sharey=True)
     
     for i, ht in enumerate(hold_times):
         data = hits_df[hits_df['ht'] == ht]
@@ -106,7 +124,7 @@ def plot_spatial_analysis(hits_df, hold_times, path):
     plt.close()
 
 def plot_arrival_times(hits_df, hold_times, path):
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
     
     for ht in hold_times:
         data = hits_df[hits_df['ht'] == ht]
@@ -121,6 +139,20 @@ def plot_arrival_times(hits_df, hold_times, path):
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.savefig(os.path.join(path, "arrival_times_spectrum.png"), dpi=300)
+    plt.close()
+
+def plot_energy_conservation(df, path):
+    df['e_drift'] = (df['e_final'] - df['e_start']) / df['e_start']
+    
+    plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
+    plt.hist(df['e_drift'], bins=100, color='green', alpha=0.7)
+    plt.axvline(0, color='red', linestyle='--')
+    plt.yscale('log')
+    plt.xlabel('Relative Energy Drift $(E_{final} - E_{start})/E_{start}$')
+    plt.ylabel('Neutron Counts (Log Scale)')
+    plt.title('Energy Conservation Check')
+    plt.grid(alpha=0.3)
+    plt.savefig(os.path.join(path, "energy_conservation.png"), dpi=300)
     plt.close()
 
 if __name__ == "__main__":

@@ -50,6 +50,7 @@ def run():
         config.holding_time = current_ht
         config.dip_end_times = [current_ht, current_ht + 250.0]
         config.array_offset = global_id * total_ntraj_per_task
+        config.heat_mult = 0.0 # For energy conservation test
 
         mode_map = {
             'Fast': ucntrap_py.DaggerMode.Fast,

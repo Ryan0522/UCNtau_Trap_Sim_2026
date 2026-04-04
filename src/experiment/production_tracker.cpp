@@ -237,15 +237,17 @@ finalize:
     return res;
 }   
 
+static constexpr double kMg = constants::kMassN * constants::kEarthG;
+static constexpr double kDefectThreshold = 155.340528314 * constants::kMuN / 10000.0;
+
 void ProductionTracker::maybe_apply_defect(State& s, double t) {
     if (config_.defect <= 0.0 || rng_.uniform01() > config_.defect) {
         return;
     }
     
     const double totalU = field_model_.potential(s, t);
-    const bool can_have_defect = (totalU - constants::kMassN * constants::kEarthG * s.z) * 10000.0 / constants::kMuN >= 155.340528314;
-
-    if (can_have_defect) {
+    
+    if ((totalU - kMg * s.z) > kDefectThreshold) {
         const double p_mag = std::sqrt(s.px*s.px + s.py*s.py + s.pz*s.pz);
 
         double x, y, z, r2;

@@ -114,12 +114,9 @@ bool SurfaceModel::check_absorption(double e_perp,
                                     RandomEngine& rng) {
     const double z_rel = std::abs(z - z_off);
 
-    double zeta = 0.0;
-    if (x > 0.0) {
-        zeta = 0.5 - std::sqrt(x * x + std::pow(z_rel - 1.0, 2));
-    } else {
-        zeta = 1.0 - std::sqrt(x * x + std::pow(z_rel - 0.5, 2));
-    }
+    const double dz = (x > 0.0) ? (z_rel - 1.0) : (z_rel - 0.5);
+    const double r = (x > 0.0) ? 0.5 : 1.0;
+    double zeta = r - std::sqrt(x * x + dz * dz);
 
     double coverage = 0.0;
     if (zeta >= zeta_cut) {

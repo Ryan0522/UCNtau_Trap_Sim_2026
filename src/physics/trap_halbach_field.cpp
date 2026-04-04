@@ -111,8 +111,8 @@ Force TrapHalbachField::force(const State& s, double t) const {
 
         // derivatives wrt (x, y, z)
         const double d_Bh_x = 0.0;
-        const double d_Bh_y = -ct::kBHold * (r + R) * y / std::pow(safe_rho, 3.0);
-        const double d_Bh_z = -ct::kBHold * (r + R) * z / std::pow(safe_rho, 3.0);
+        const double d_Bh_y = -ct::kBHold * (r + R) * y / (safe_rho * safe_rho * safe_rho);
+        const double d_Bh_z = -ct::kBHold * (r + R) * z / (safe_rho * safe_rho * safe_rho);
 
         const double denom_root = std::max(root, constants::kEpsilon);
         const double R_minus_rho = R - safe_rho;
