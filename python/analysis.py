@@ -88,7 +88,7 @@ def run_analysis():
     plot_arrival_times(hits_df, hold_times, base_results_path)
 
     # 4; Energy Conservation Check
-    plot_energy_conservation(hits_df, base_results_path)
+    plot_energy_conservation(hits_df, hold_times, base_results_path)
 
 def plot_decay_curve(df, path, label):
     plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
@@ -141,18 +141,30 @@ def plot_arrival_times(hits_df, hold_times, path):
     plt.savefig(os.path.join(path, "arrival_times_spectrum.png"), dpi=300)
     plt.close()
 
-def plot_energy_conservation(df, path):
+def plot_energy_conservation(df, hold_times, path):
     df['e_drift'] = (df['e_final'] - df['e_start']) / df['e_start']
+    fig, axes = plt.subplots(1, 5, figsize=(FIG_WIDTH * 5, FIG_HEIGHT), sharey=True)
     
-    plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
-    plt.hist(df['e_drift'], bins=100, color='green', alpha=0.7)
-    plt.axvline(0, color='red', linestyle='--')
-    plt.yscale('log')
-    plt.xlabel('Relative Energy Drift $(E_{final} - E_{start})/E_{start}$')
-    plt.ylabel('Neutron Counts (Log Scale)')
-    plt.title('Energy Conservation Check')
-    plt.grid(alpha=0.3)
-    plt.savefig(os.path.join(path, "energy_conservation.png"), dpi=300)
+    x_min, x_max = df['e_drift'].min(), df['e_drift'].max()
+    for i, ht in enumerate(hold_times):
+        data = df[df['ht'] == ht]
+        ax = axes[i]
+        
+        if not data.empty:
+            ax.hist(data['e_drift'], bins=50, range=(x_min, x_max), 
+                    color='green', alpha=0.7)
+            ax.axvline(0, color='red', linestyle='--')
+            ax.set_title(f"HT: {ht}s (N={len(data)})")
+            ax.set_yscale('log')
+        else:
+            ax.set_title(f"HT: {ht}s (No Data)")
+        ax.set_xlabel('Rel. Energy Drift')
+        if i == 0: 
+            ax.set_ylabel('Neutron Counts (Log)')
+
+    plt.suptitle('Energy Conservation vs. Hold Time', fontsize=16, y=1.05)
+    plt.tight_layout()
+    plt.savefig(os.path.join(path, "energy_conservation_comparison.png"), dpi=300)
     plt.close()
 
 if __name__ == "__main__":

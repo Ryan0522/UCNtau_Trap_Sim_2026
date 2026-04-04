@@ -55,6 +55,7 @@ PYBIND11_MODULE(ucntrap_py, m) {
     // SimulationConfig
     py::class_<SimulationConfig>(m, "SimulationConfig")
         .def(py::init<>())
+        .def_readwrite("tracker", &SimulationConfig::tracker)
         .def_readwrite("dt", &SimulationConfig::dt)
         .def_readwrite("ntraj", &SimulationConfig::ntraj)
         .def_readwrite("seed", &SimulationConfig::seed)

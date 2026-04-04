@@ -17,6 +17,8 @@ def run():
                         help="Sub-folder under results/ (e.g., 'defect2e-3')")
     parser.add_argument('--ntraj', type=int, default=100, 
                         help="# of simulations")
+    parser.add_argument('--tracker', type=str, default='production',
+                        choices=['production', 'energy'], help="Tracker logic type")
     args, unknown = parser.parse_known_args()
 
     # 1. Initialize MPI
@@ -51,6 +53,7 @@ def run():
         config.dip_end_times = [current_ht, current_ht + 250.0]
         config.array_offset = global_id * total_ntraj_per_task
         config.heat_mult = 0.0 # For energy conservation test
+        config.tracker = args.tracker
 
         mode_map = {
             'Fast': ucntrap_py.DaggerMode.Fast,

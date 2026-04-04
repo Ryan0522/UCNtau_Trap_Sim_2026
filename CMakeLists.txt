@@ -49,6 +49,7 @@ add_library(ucntrap_core
     src/core/config.cpp
     src/core/runner.cpp
     src/experiment/production_tracker.cpp
+    src/experiment/energy_tracker.cpp
     src/io/result_writer.cpp
     src/io/trace_loader.cpp
     src/numeric/integrator.cpp

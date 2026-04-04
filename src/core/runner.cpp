@@ -1,5 +1,6 @@
 #include "ucntrap/runner.hpp"
 #include "ucntrap/experiment/production_tracker.hpp"
+#include "ucntrap/experiment/energy_tracker.hpp"
 #include "ucntrap/physics/trap_halbach_field.hpp"
 #include "ucntrap/physics/planar_halbach_field.hpp"
 #include "ucntrap/numerics/integrator.hpp"
@@ -66,8 +67,14 @@ int Runner::run() const {
 
     // 5. Initialize integrators and trackers
     const Integrator& integrator = default_integrator();
-    Dagger dagger(config_.dip_heights, config_.dip_end_times);
-    ProductionTracker tracker(config_, *field, integrator, dagger, rng);
+    
+    std::unique_ptr<Tracker> tracker;
+    if (config_.tracker == "energy") {
+        tracker = std::make_unique<EnergyTracker>(config_, *field, integrator);
+    } else {
+        Dagger dagger(config_.dip_heights, config_.dip_end_times);
+        tracker = std::make_unique<ProductionTracker>(config_, *field, integrator, dagger, rng);
+    }
 
     // 6. Set output path
     std::string out_path = config_.output_prefix + "_rank" + std::to_string(rank) + ".csv";
@@ -80,7 +87,7 @@ int Runner::run() const {
 
     while (source->has_next()) {
         State s = source->next();
-        Result res = tracker.run(s);
+        Result res = tracker->run(s);
         writer.write(res);
         completed++;
 
