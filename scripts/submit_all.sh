@@ -1,7 +1,7 @@
 #!/bin/bash
 
 MODE="Segmented"
-DEFECT="2e-5"
+DEFECT="1e-5"
 OUT_DIR="${MODE}_def_${DEFECT}"
 
 echo "--------------------------------------------------"

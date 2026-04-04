@@ -248,12 +248,18 @@ void ProductionTracker::maybe_apply_defect(State& s, double t) {
     if (can_have_defect) {
         const double p_mag = std::sqrt(s.px*s.px + s.py*s.py + s.pz*s.pz);
 
-        const double phi = rng_.uniform01() * constants::kPi;
-        const double theta = rng_.uniform01() * 2.0 * constants::kPi;
-
-        s.px = p_mag * std::sin(phi) * std::cos(theta);
-        s.py = p_mag * std::sin(phi) * std::sin(theta);
-        s.pz = p_mag * std::cos(phi);
+        double x, y, z, r2;
+        do {
+            x = rng_.uniform01() * 2.0 - 1.0;
+            y = rng_.uniform01() * 2.0 - 1.0;
+            z = rng_.uniform01() * 2.0 - 1.0;
+            r2 = x*x + y*y + z*z;
+        } while (r2 > 1.0 || r2 == 0);
+        
+        double inv_r = p_mag / std::sqrt(r2);
+        s.px = x * inv_r;
+        s.py = y * inv_r;
+        s.pz = z * inv_r;
     }
 }
 

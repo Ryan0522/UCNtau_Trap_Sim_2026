@@ -1,6 +1,7 @@
 import sys
 import os
 import argparse
+sys.path.append(os.getcwd())
 sys.path.append(os.path.join(os.getcwd(), 'python'))
 import ucntrap_py
 import resource

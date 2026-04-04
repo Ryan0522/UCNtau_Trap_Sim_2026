@@ -14,6 +14,7 @@ Testing/
 
 # Data & Results
 results/**/*.csv
+results/
 data/neutrons_init.out
 
 # Visual Studio
