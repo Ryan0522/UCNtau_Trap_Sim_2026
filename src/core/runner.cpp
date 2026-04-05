@@ -12,6 +12,7 @@
 #include <mpi.h>
 #include <iostream>
 #include <memory>
+#include <limits>
 
 namespace ucntrap {
 
@@ -67,18 +68,20 @@ int Runner::run() const {
 
     // 5. Initialize integrators and trackers
     const Integrator& integrator = default_integrator();
-    
+    Dagger dagger(config_.dip_heights, config_.dip_end_times);
+
     std::unique_ptr<Tracker> tracker;
     if (config_.tracker == "energy") {
         tracker = std::make_unique<EnergyTracker>(config_, *field, integrator);
     } else {
-        Dagger dagger(config_.dip_heights, config_.dip_end_times);
         tracker = std::make_unique<ProductionTracker>(config_, *field, integrator, dagger, rng);
     }
 
     // 6. Set output path
+    int precision = (config_.tracker == "energy") ?
+                    std::numeric_limits<double>::digits10 : 7;
     std::string out_path = config_.output_prefix + "_rank" + std::to_string(rank) + ".csv";
-    CsvResultWriter writer(out_path);
+    CsvResultWriter writer(out_path, precision);
 
     // 7. Simulation loop
     size_t completed = 0;

@@ -27,6 +27,7 @@ def run():
     try:
         # Use absolute path (will be ../ from current file)
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        is_energy_tracker = (args.tracker == 'energy')
 
         # 2. Obtain Slurm Array ID
         global_id = int(os.getenv('SLURM_ARRAY_TASK_ID', '0'))
@@ -52,7 +53,7 @@ def run():
         config.holding_time = current_ht
         config.dip_end_times = [current_ht, current_ht + 250.0]
         config.array_offset = global_id * total_ntraj_per_task
-        config.heat_mult = 0.0 # For energy conservation test
+        config.heat_mult = 0.0 if is_energy_tracker else 1.0
         config.tracker = args.tracker
 
         mode_map = {
@@ -69,7 +70,16 @@ def run():
         config.z_trace_file = os.path.join(base_dir, "data/zvals.bin")
 
         # 5. Output structure
-        output_dir = os.path.join(base_dir, "results", args.out_dir, f"HT_{int(current_ht)}_{args.mode}")
+        original_out_dir = args.out_dir
+        if is_energy_tracker:
+            if "_" in original_out_dir:
+                suffix = original_out_dir.split('_', 1)[1]
+                out_dir = f"Energy_{suffix}"
+            else:
+                out_dir = "Energy"
+        else:
+            out_dir = original_out_dir
+        output_dir = os.path.join(base_dir, "results", out_dir, f"HT_{int(current_ht)}_{args.mode}")
         os.makedirs(output_dir, exist_ok=True)
         config.output_prefix = os.path.join(output_dir, f"batch_{batch_idx:02d}")
 

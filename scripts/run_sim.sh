@@ -36,4 +36,4 @@ mpirun --bind-to none -- python3 sim_script.py  \
     --defect "$DEFECT" \
     --out_dir "$OUT_DIR" \
     --ntraj 1000 \
-    --tracker "energy"
+    --tracker "production"

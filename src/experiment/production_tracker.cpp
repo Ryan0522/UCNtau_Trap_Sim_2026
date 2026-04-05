@@ -123,46 +123,44 @@ Result ProductionTracker::run(const State& initial) {
         if (crossed_y0) {
             // Linear inteprolation to find the exact crossing point
             const double frac = std::abs(prev_s.y) / (std::abs(s.y) + std::abs(prev_s.y));
-            const double pred_x = prev_s.x + frac * (s.x - prev_s.x);
-            const double pred_z = prev_s.z + frac * (s.z - prev_s.z);
             
-            const HitInfo hit = dagger_.classify_crossing(pred_x, pred_z, t_exp);
+            State s_hit;
+            s_hit.x  = prev_s.x  + frac * (s.x  - prev_s.x);
+            s_hit.y  = 0.0;
+            s_hit.z  = prev_s.z  + frac * (s.z  - prev_s.z);
 
+            s_hit.px = prev_s.px + frac * (s.px - prev_s.px);
+            s_hit.py = prev_s.py + frac * (s.py - prev_s.py);
+            s_hit.pz = prev_s.pz + frac * (s.pz - prev_s.pz);
+                
+            const HitInfo hit = dagger_.classify_crossing(s_hit.x, s_hit.z, t_exp);
+            
             if (hit.type != HitType::None) {
                 bool terminate = false;
-
+                
                 if (hit.type == HitType::Dagger) {
                     res.n_hit++;
 
                     const bool accepted = check_acceptance(hit.x, prev_s.y, s.y);
 
                     if (accepted) {
-                        double p2 = (s.px * s.px + s.py * s.py + s.pz * s.pz);
+                        double p2 = s_hit.px * s_hit.px + s_hit.py * s_hit.py + s_hit.pz * s_hit.pz;
                         double u_rand = rng_.uniform01();
                         double e_perp_eff = (p2 / (2.0 * constants::kMassN)) * std::cos(u_rand * constants::kPi / 2.0);
                         
                         if (SurfaceModel::check_absorption(
                                 e_perp_eff, config_.bthick, hit.x, hit.z, hit.z_off, config_.zetacut, rng_)) {
-                            s = prev_s;
-                            s.x = hit.x;
-                            s.y = 0.0;
-                            s.z = hit.z;
+                            s = s_hit;
                             res.code = 0; // detected
                             terminate = true;
                         } else if (rng_.uniform01() <= config_.wall_loss_prob) {
-                            s = prev_s;
-                            s.x = hit.x;
-                            s.y = 0.0;
-                            s.z = hit.z;
+                            s = s_hit;
                             res.code = -5; // wall loss after accepted dagger hit
                             terminate = true;
                         }
                     } else {
                         if (rng_.uniform01() <= config_.wall_loss_prob) {
-                            s = prev_s;
-                            s.x = hit.x;
-                            s.y = 0.0;
-                            s.z = hit.z;
+                            s = s_hit;
                             res.code = -5; // rejected geometry hit lost on wall
                             terminate = true;
                         }
@@ -171,10 +169,7 @@ Result ProductionTracker::run(const State& initial) {
                     res.n_hit_house_low++;
 
                     if (rng_.uniform01() <= config_.wall_loss_prob) {
-                        s = prev_s;
-                        s.x = hit.x;
-                        s.y = 0.0;
-                        s.z = hit.z;
+                        s = s_hit;
                         res.code = -6;
                         terminate = true;
                     }
@@ -182,10 +177,7 @@ Result ProductionTracker::run(const State& initial) {
                     res.n_hit_house_high++;
 
                     if (rng_.uniform01() <= config_.wall_loss_prob) {
-                        s = prev_s;
-                        s.x = hit.x;
-                        s.y = 0.0;
-                        s.z = hit.z;
+                        s = s_hit;
                         res.code = -7;
                         terminate = true;
                     }
@@ -196,10 +188,10 @@ Result ProductionTracker::run(const State& initial) {
                 }
 
                 // Surviving physical hit: reflect from the pre-hit state.
-                s = prev_s;
+                s = s_hit;
 
                 const SurfaceModel::Vec3 norm =
-                    (prev_s.y > 0.0 && prev_s.py < 0.0)
+                    (s.py < 0)
                         ? SurfaceModel::Vec3{0.0, 1.0, 0.0}
                         : SurfaceModel::Vec3{0.0, -1.0, 0.0};
 
@@ -208,8 +200,9 @@ Result ProductionTracker::run(const State& initial) {
                 SurfaceModel::reflect(s, norm, tang, rng_);
 
                 // Put state back onto the crossing plane.
+                constexpr double eps_y = 1e-12;
+                s.y = (s.py > 0.0) ? eps_y : -eps_y;
                 s.x = hit.x;
-                s.y = 0.0;
                 s.z = hit.z;
             }
         }

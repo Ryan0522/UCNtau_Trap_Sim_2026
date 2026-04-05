@@ -15,7 +15,7 @@ public:
 
 class CsvResultWriter final : public ResultWriter {
 public:
-    explicit CsvResultWriter(const std::string& path);
+    explicit CsvResultWriter(const std::string& path, int precision = 7);
     void write(const Result& result) override;
     void flush() override;
 

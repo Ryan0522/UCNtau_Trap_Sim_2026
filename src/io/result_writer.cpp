@@ -3,18 +3,20 @@
 #include <fstream>
 #include <memory>
 #include <stdexcept>
+#include <iomanip>
 
 namespace ucntrap {
 
-CsvResultWriter::CsvResultWriter(const std::string& path)
+CsvResultWriter::CsvResultWriter(const std::string& path, int precision)
     : out_(path), buffer_(1 << 20) {
     if (!out_.is_open()) {
         throw std::runtime_error(
             "CsvResultWriter: unable to open out file '" + path + "'"
         );
-
-        out_.rdbuf()->pubsetbuf(buffer_.data(), static_cast<std::streamsize>(buffer_.size()));
     }
+
+    out_ << std::scientific << std::setprecision(precision);
+    out_.rdbuf()->pubsetbuf(buffer_.data(), static_cast<std::streamsize>(buffer_.size()));
 }
 
 void CsvResultWriter::write_header() {

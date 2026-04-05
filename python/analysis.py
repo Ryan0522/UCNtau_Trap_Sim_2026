@@ -143,26 +143,30 @@ def plot_arrival_times(hits_df, hold_times, path):
 
 def plot_energy_conservation(df, hold_times, path):
     df['e_drift'] = (df['e_final'] - df['e_start']) / df['e_start']
-    fig, axes = plt.subplots(1, 5, figsize=(FIG_WIDTH * 5, FIG_HEIGHT), sharey=True)
+    fig, axes = plt.subplots(2, 5, figsize=(FIG_WIDTH * 5, FIG_HEIGHT * 2), sharey='row')
     
     x_min, x_max = df['e_drift'].min(), df['e_drift'].max()
+    if pd.isna(x_min): x_min, x_max = -1e-7, 1e-7
+
     for i, ht in enumerate(hold_times):
         data = df[df['ht'] == ht]
-        ax = axes[i]
         
-        if not data.empty:
-            ax.hist(data['e_drift'], bins=50, range=(x_min, x_max), 
+        ax_top = axes[0, i]
+        ax_top.hist(data['e_drift'], bins=200, range=(x_min, x_max), 
                     color='green', alpha=0.7)
-            ax.axvline(0, color='red', linestyle='--')
-            ax.set_title(f"HT: {ht}s (N={len(data)})")
-            ax.set_yscale('log')
-        else:
-            ax.set_title(f"HT: {ht}s (No Data)")
-        ax.set_xlabel('Rel. Energy Drift')
-        if i == 0: 
-            ax.set_ylabel('Neutron Counts (Log)')
+        ax_top.set_yscale('log')
+        ax_top.set_title(f"HT: {ht}s (Global)")
+        if i == 0: ax_top.set_ylabel('Counts (Log)')
 
-    plt.suptitle('Energy Conservation vs. Hold Time', fontsize=16, y=1.05)
+        ax_bottom = axes[1, i]
+        zoom_range = (-1e-10, 1e-10) 
+        ax_bottom.hist(data['e_drift'], bins=100, range=zoom_range, 
+                       color='blue', alpha=0.7)
+        ax_bottom.set_title(f"HT: {ht}s (Zoom: 1e-10)")
+        ax_bottom.set_xlabel('Rel. Energy Drift')
+        if i == 0: ax_bottom.set_ylabel('Counts (Linear)')
+
+    plt.suptitle('Energy Conservation: Global (Top) vs. Zoomed Middle (Bottom)', fontsize=18, y=1.02)
     plt.tight_layout()
     plt.savefig(os.path.join(path, "energy_conservation_comparison.png"), dpi=300)
     plt.close()
