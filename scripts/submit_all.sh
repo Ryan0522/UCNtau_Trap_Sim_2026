@@ -2,7 +2,8 @@
 
 MODE="Segmented"
 DEFECT="0"
-OUT_DIR="${MODE}_def_${DEFECT}"
+# OUT_DIR="${MODE}_def_${DEFECT}"
+OUT_DIR="${MODE}_LUT_def_${DEFECT}"
 
 echo "--------------------------------------------------"
 echo " Launching UCN Production Pipeline"
@@ -12,7 +13,7 @@ echo " Folder: $OUT_DIR"
 echo "--------------------------------------------------"
 
 # 1. Submit simulation job
-SIM_ID=$(sbatch --parsable scripts/run_sim.sh "$MODE" "$DEFECT")
+SIM_ID=$(sbatch --parsable scripts/run_sim.sh "$MODE" "$DEFECT" "$OUT_DIR")
 
 if [ -z "$SIM_ID" ]; then
     echo "Error: Failed to submit simulation job."

@@ -17,7 +17,7 @@ module load python
 # 2. Variables from submit_all.sh
 MODE=${1:-Segmented}
 DEFECT=${2:-2e-5}
-OUT_DIR="${MODE}_def_${DEFECT}"
+OUT_DIR=${3:-"${MODE}_def_${DEFECT}"}
 
 # 3. Determine holdtime index (4 is for 1550s)
 HT_IDX=$((SLURM_ARRAY_TASK_ID / 4))
@@ -36,4 +36,4 @@ mpirun --bind-to none -- python3 sim_script.py  \
     --defect "$DEFECT" \
     --out_dir "$OUT_DIR" \
     --ntraj 1000 \
-    --tracker "production"
+    --tracker "energy"

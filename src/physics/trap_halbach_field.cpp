@@ -73,7 +73,7 @@ Force TrapHalbachField::force(const State& s, double t) const {
     Force f_out{NAN, NAN, NAN};
 
     if (z < -1.0 && r_zeta < r) {
-        const double eta = r * std::atan(x / (safe_rho - R));
+        const double eta = r * std::atan2(x, delta);
         const double zeta = r - root;
 
         double sum_cos = 0.0;
@@ -194,7 +194,7 @@ double TrapHalbachField::potential(const State& s, double t) const {
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    const double eta = r * std::atan2(x, safe_rho);
+    const double eta = r * std::atan2(x, delta);
     const double zeta = r - std::sqrt(x * x + (safe_rho - R) * (safe_rho - R));
 
     double sum_cos = 0.0;
