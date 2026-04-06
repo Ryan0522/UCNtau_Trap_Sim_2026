@@ -26,9 +26,10 @@ TrapHalbachField::TrapHalbachField(double heat_mult,
         amp_prefactor_[idx] = sign / odd * (1.0 - std::exp(-k_n_[idx] * ct::kMagThick));
     }
 
-    sin_.initialize(0.0, 2.0 * constants::kPi, 65536, [](double x) { return std::sin(x); });
-    cos_.initialize(0.0, 2.0 * constants::kPi, 65536, [](double x) { return std::cos(x); });
-    exp_.initialize(-150.0, 0.0, 65536, [](double x) { return std::exp(x); });
+    int n = 65536;
+    sin_.initialize(0.0, 2.0 * constants::kPi, n, [](double x) { return std::sin(x); });
+    cos_.initialize(0.0, 2.0 * constants::kPi, n, [](double x) { return std::cos(x); });
+    exp_.initialize(-150.0, 0.0, n, [](double x) { return std::exp(x); });
 }
 
 void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const {

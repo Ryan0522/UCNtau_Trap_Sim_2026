@@ -1,5 +1,4 @@
 #pragma once
-#include "ucntrap/constants.hpp"
 #include <vector>
 #include <cmath>
 #include <functional>
@@ -36,14 +35,19 @@ public:
         return table_[i] + frac * (table_[i + 1] - table_[i]);
     }
 
-    // Assuming n = 65536, min = 0, max = 2*PI
-    double scale = 65536.0 / (2.0 * constants::kPi);
-    uint64_t mask = 65535; // n - 1
-
-    // for sin/cos periodic table
+    // for sin/cos periodic table assume n = 65536 and input is in [0, 2pi)
     inline double eval_periodic(double x) const {
-        uint64_t idx = static_cast<uint64_t>(x * scale) & mask;
-        return table_[idx];
+        double pos = (x - min_) * inv_step_;
+        
+        int64_t i0 = static_cast<int64_t>(std::floor(pos));
+        double frac = pos - static_cast<double>(i0);
+
+        uint64_t mask = n_ - 1;
+        uint64_t idx0 = static_cast<uint64_t>(i0) & mask;
+        uint64_t idx1 = (idx0 + 1) & mask;
+
+        // 4. Linear interpolation: y = y0 + frac * (y1 - y0)
+        return table_[idx0] + frac * (table_[idx1] - table_[idx0]);
     }
 
 private:
