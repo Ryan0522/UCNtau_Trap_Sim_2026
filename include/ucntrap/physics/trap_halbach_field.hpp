@@ -1,6 +1,7 @@
 #pragma once
 #include "ucntrap/physics/field_model.hpp"
 #include "ucntrap/constants.hpp"
+#include "ucntrap/numerics/lut.hpp"
 #include <array>
 #include <vector>
 
@@ -20,6 +21,8 @@ private:
     static constexpr int kTerms = constants::trap::kNSumTerms;
     double heat_mult_;
     const std::vector<double> tx_, ty_, tz_;
+
+    LinearLUT sin_, cos_, exp_;
 
     double A_ = 0.0;
     std::array<double, kTerms> k_n_{};

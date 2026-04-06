@@ -91,39 +91,26 @@ Result ProductionTracker::run(const State& initial) {
     while (t - cleaning_time < 3000.0) { // Max simulation time
         prev_s = s;
         integrator_.step(s, t, config_.dt, field_model_);
-        t += config_.dt;
-
-        // defect
-        maybe_apply_defect(s, t);
-        
-        const double t_exp = t - cleaning_time;
-
-        // Check for decay
-        if (t_exp > res.death_time) {
-            res.code = 1; // Decay
-            goto finalize;
-        }
-
-        // Check for raised cleaning
-        const double raised_clean_z = cd::kBaseZ + config_.raised_cleaning_height;
-        const bool crossed_raised_clean =
-            (prev_s.z < raised_clean_z && s.z > raised_clean_z) ||
-            (prev_s.z > raised_clean_z && s.z < raised_clean_z);
-
-        if (crossed_raised_clean && s.y > 0.0) {
-            res.code = -3; // raised clean
-            goto finalize;
-        }
-
-        // Check for xz-plane crossing
-        const bool crossed_y0 =
-            (prev_s.y < 0.0 && s.y > 0.0) ||
-            (prev_s.y > 0.0 && s.y < 0.0);
+        const bool crossed_y0 = (prev_s.y != 0.0) && (prev_s.y * s.y < 0.0);
         
         if (crossed_y0) {
-            // Linear inteprolation to find the exact crossing point
             const double frac = std::abs(prev_s.y) / (std::abs(s.y) + std::abs(prev_s.y));
+            t += frac * config_.dt; // Adjust time to crossing point
+            const double t_exp = t - cleaning_time;
+
+            if (t_exp > res.death_time) {
+                res.code = -3; // died before crossing
+                goto finalize;
+            }
             
+            const double raised_clean_z = cd::kBaseZ + config_.raised_cleaning_height;
+            const double z_at_y0 = prev_s.z + frac * (s.z - prev_s.z);
+            if (std::abs(z_at_y0 - raised_clean_z) < 1e-9 && s.y > 0.0) {
+                res.code = -3; 
+                goto finalize;
+            }
+
+            // Linear inteprolation to find the exact crossing point
             State s_hit;
             s_hit.x  = prev_s.x  + frac * (s.x  - prev_s.x);
             s_hit.y  = 0.0;
@@ -132,7 +119,7 @@ Result ProductionTracker::run(const State& initial) {
             s_hit.px = prev_s.px + frac * (s.px - prev_s.px);
             s_hit.py = prev_s.py + frac * (s.py - prev_s.py);
             s_hit.pz = prev_s.pz + frac * (s.pz - prev_s.pz);
-                
+
             const HitInfo hit = dagger_.classify_crossing(s_hit.x, s_hit.z, t_exp);
             
             if (hit.type != HitType::None) {
@@ -189,22 +176,47 @@ Result ProductionTracker::run(const State& initial) {
 
                 // Surviving physical hit: reflect from the pre-hit state.
                 s = s_hit;
-
-                const SurfaceModel::Vec3 norm =
-                    (s.py < 0)
-                        ? SurfaceModel::Vec3{0.0, 1.0, 0.0}
-                        : SurfaceModel::Vec3{0.0, -1.0, 0.0};
-
+                s.y = 0.0;
+                const SurfaceModel::Vec3 norm = (s.py < 0) ? SurfaceModel::Vec3{0.0, 1.0, 0.0} : SurfaceModel::Vec3{0.0, -1.0, 0.0};
                 const SurfaceModel::Vec3 tang = {0.0, 0.0, 1.0};
-
                 SurfaceModel::reflect(s, norm, tang, rng_);
 
                 // Put state back onto the crossing plane.
-                constexpr double eps_y = 1e-12;
-                s.y = (s.py > 0.0) ? eps_y : -eps_y;
-                s.x = hit.x;
-                s.z = hit.z;
+                continue;
+            } else {
+                t += (1 - frac) * config_.dt;
+                const double t_exp = t - cleaning_time;
+
+                if (t_exp > res.death_time) {
+                    res.code = -3; // died before crossing
+                    goto finalize;
+                }
+                
+                const double raised_clean_z = cd::kBaseZ + config_.raised_cleaning_height;
+                if (std::abs(s.z - raised_clean_z) < 1e-9 && s.y > 0.0) { // 精確檢測
+                    res.code = -3; 
+                    goto finalize;
+                }
+
+                maybe_apply_defect(s, t);
             }
+        } else {
+            t += config_.dt;
+            const double t_exp = t - cleaning_time;
+
+            if (t_exp > res.death_time) {
+                res.code = 1; 
+                goto finalize;
+            }
+
+            const double raised_clean_z = cd::kBaseZ + config_.raised_cleaning_height;
+            if (((prev_s.z < raised_clean_z && s.z > raised_clean_z) || 
+                (prev_s.z > raised_clean_z && s.z < raised_clean_z)) && s.y > 0.0) {
+                res.code = -3; 
+                goto finalize;
+            }
+
+            maybe_apply_defect(s, t);
         }
 
         if (std::isnan(s.x) || std::isnan(s.y) || std::isnan(s.z) ||

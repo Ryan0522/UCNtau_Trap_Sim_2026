@@ -7,6 +7,8 @@ namespace ucntrap {
 
 namespace ct = constants::trap;
 
+static constexpr double inv_sample_dt = 1.0 / ct::kSampleDt;
+
 TrapHalbachField::TrapHalbachField(double heat_mult,
                      const std::vector<double>& tx,
                      const std::vector<double>& ty,
@@ -23,6 +25,10 @@ TrapHalbachField::TrapHalbachField(double heat_mult,
         k_n_[idx] = 2.0 * constants::kPi * odd / ct::kMagSpace;
         amp_prefactor_[idx] = sign / odd * (1.0 - std::exp(-k_n_[idx] * ct::kMagThick));
     }
+
+    sin_.initialize(0.0, 2.0 * constants::kPi, 65536, [](double x) { return std::sin(x); });
+    cos_.initialize(0.0, 2.0 * constants::kPi, 65536, [](double x) { return std::cos(x); });
+    exp_.initialize(-150.0, 0.0, 65536, [](double x) { return std::exp(x); });
 }
 
 void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const {
@@ -35,8 +41,8 @@ void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, d
     }
     
     int num = tx_.size();
-    int iLowRaw = static_cast<int>(t / ct::kSampleDt);
-    double frac = (t - iLowRaw * ct::kSampleDt) / ct::kSampleDt;
+    int iLowRaw = static_cast<int>(t * inv_sample_dt);
+    double frac = (t - iLowRaw * ct::kSampleDt) * inv_sample_dt;
 
     int iLow = (iLowRaw % num + num) % num;
     int iHi  = ((iLowRaw + 1) % num + num) % num;
@@ -77,10 +83,13 @@ Force TrapHalbachField::force(const State& s, double t) const {
 
         for (int idx = 0; idx < ct::kNSumTerms; ++idx) {
             const double k = k_n_[idx];
-            const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
+            // const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
+            const double amp = amp_prefactor_[idx] * exp_.eval(-k * zeta);
 
-            const double c = std::cos(k * eta);
-            const double s_eta = std::sin(k * eta);
+            // const double c = std::cos(k * eta);
+            const double c = cos_.eval_periodic(k * eta);
+            // const double s_eta = std::sin(k * eta);
+            const double s_eta = sin_.eval_periodic(k * eta);
 
             const double cos_term = amp * c;
             const double sin_term = amp * s_eta;
@@ -178,13 +187,14 @@ double TrapHalbachField::potential(const State& s, double t) const {
 
     const double rho = std::sqrt(y * y + z * z);
     const double safe_rho = std::max(rho, constants::kEpsilon);
+    const double delta = safe_rho - R;
     const double r_zeta = std::sqrt((safe_rho - R) * (safe_rho - R) + x * x);
 
     if (!(z < -1.0 && r_zeta < r)) {
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    const double eta = r * std::atan(x / (safe_rho - R));
+    const double eta = r * std::atan2(x, safe_rho);
     const double zeta = r - std::sqrt(x * x + (safe_rho - R) * (safe_rho - R));
 
     double sum_cos = 0.0;
@@ -192,10 +202,13 @@ double TrapHalbachField::potential(const State& s, double t) const {
 
     for (int idx = 0; idx < ct::kNSumTerms; ++idx) {
         const double k = k_n_[idx];
-        const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
+        // const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
+        const double amp = amp_prefactor_[idx] * exp_.eval(-k * zeta);
 
-        sum_cos += amp * std::cos(k * eta);
-        sum_sin += amp * std::sin(k * eta);
+        // sum_cos += amp * std::cos(k * eta);
+        // sum_sin += amp * std::sin(k * eta);
+        sum_cos += amp * cos_.eval_periodic(k * eta);
+        sum_sin += amp * sin_.eval_periodic(k * eta);
     }
 
     const double b_zeta = A_ * sum_cos;

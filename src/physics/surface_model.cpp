@@ -60,15 +60,15 @@ double clamp01(double x) {
 } // namespace
 
 double SurfaceModel::calculate_absorption_prob(double e_perp, double b_thick) {
-    const double v_boron =
+    static const double v_boron =
         (2.0 * constants::kPi * (constants::kHbar * constants::kHbar) /
          constants::kMassN) *
         cs::kABoron * cs::kNBoron;
 
-    const double w_boron =
+    static const double w_boron =
         (constants::kHbar / 2.0) * cs::kNBoron * cs::kSigmaBoron;
 
-    const double v_zns =
+    static const double v_zns =
         (2.0 * constants::kPi * (constants::kHbar * constants::kHbar) /
          constants::kMassN) *
             cs::kAZinc * cs::kNZinc +
@@ -76,11 +76,11 @@ double SurfaceModel::calculate_absorption_prob(double e_perp, double b_thick) {
          constants::kMassN) *
             cs::kASulfur * cs::kNSulfur;
 
-    const double w_zns =
+    static const double w_zns =
         (constants::kHbar / 2.0) *
         (cs::kNZinc * cs::kSigmaZinc + cs::kNSulfur * cs::kSigmaSulfur);
 
-    const std::vector<std::complex<double>> potentials = {
+    static const std::vector<std::complex<double>> potentials = {
         {0.0, 0.0},
         {v_boron, -w_boron},
         {v_zns, -w_zns}

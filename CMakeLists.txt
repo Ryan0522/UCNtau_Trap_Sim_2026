@@ -26,6 +26,21 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 
 include(FetchContent)
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
+
+if(ipo_supported)
+    message(STATUS "IPO/LTO is supported. Enabling global optimization...")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options("-flto=auto")
+        add_link_options("-flto=auto")
+    endif()
+else()
+    message(WARNING "IPO/LTO is not supported on this system: ${ipo_error}")
+endif()
+
 # --- 2. fetch (yaml-cpp & pybind11) --- 
 FetchContent_Declare(
   yaml-cpp
