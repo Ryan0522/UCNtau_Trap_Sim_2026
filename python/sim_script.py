@@ -47,7 +47,7 @@ def run():
         # 3. Configure Simulation
         config = ucntrap_py.SimulationConfig()
         config.ntraj = args.ntraj
-        config.dt = 0.001
+        config.dt = 0.0005
         config.defect = args.defect
         config.seed = 42 + (global_id * 1000) + rank
         config.holding_time = current_ht

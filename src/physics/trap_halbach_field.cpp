@@ -26,10 +26,10 @@ TrapHalbachField::TrapHalbachField(double heat_mult,
         amp_prefactor_[idx] = sign / odd * (1.0 - std::exp(-k_n_[idx] * ct::kMagThick));
     }
 
-    int n = 65536;
-    sin_.initialize(0.0, 2.0 * constants::kPi, n, [](double x) { return std::sin(x); });
-    cos_.initialize(0.0, 2.0 * constants::kPi, n, [](double x) { return std::cos(x); });
-    exp_.initialize(-150.0, 0.0, n, [](double x) { return std::exp(x); });
+    // int n = 65536;
+    // sin_.initialize(0.0, 2.0 * constants::kPi, n, [](double x) { return std::sin(x); });
+    // cos_.initialize(0.0, 2.0 * constants::kPi, n, [](double x) { return std::cos(x); });
+    // exp_.initialize(-150.0, 0.0, n, [](double x) { return std::exp(x); });
 }
 
 void TrapHalbachField::get_shifted_coords(const State& s, double t, double& x, double& y, double& z) const {
@@ -84,13 +84,13 @@ Force TrapHalbachField::force(const State& s, double t) const {
 
         for (int idx = 0; idx < ct::kNSumTerms; ++idx) {
             const double k = k_n_[idx];
-            // const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
-            const double amp = amp_prefactor_[idx] * exp_.eval(-k * zeta);
+            const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
+            // const double amp = amp_prefactor_[idx] * exp_.eval(-k * zeta);
 
-            // const double c = std::cos(k * eta);
-            const double c = cos_.eval_periodic(k * eta);
-            // const double s_eta = std::sin(k * eta);
-            const double s_eta = sin_.eval_periodic(k * eta);
+            const double c = std::cos(k * eta);
+            // const double c = cos_.eval_periodic(k * eta);
+            const double s_eta = std::sin(k * eta);
+            // const double s_eta = sin_.eval_periodic(k * eta);
 
             const double cos_term = amp * c;
             const double sin_term = amp * s_eta;
@@ -203,13 +203,13 @@ double TrapHalbachField::potential(const State& s, double t) const {
 
     for (int idx = 0; idx < ct::kNSumTerms; ++idx) {
         const double k = k_n_[idx];
-        // const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
-        const double amp = amp_prefactor_[idx] * exp_.eval(-k * zeta);
+        const double amp = amp_prefactor_[idx] * std::exp(-k * zeta);
+        // const double amp = amp_prefactor_[idx] * exp_.eval(-k * zeta);
 
-        // sum_cos += amp * std::cos(k * eta);
-        // sum_sin += amp * std::sin(k * eta);
-        sum_cos += amp * cos_.eval_periodic(k * eta);
-        sum_sin += amp * sin_.eval_periodic(k * eta);
+        sum_cos += amp * std::cos(k * eta);
+        // sum_cos += amp * cos_.eval_periodic(k * eta);
+        sum_sin += amp * std::sin(k * eta);
+        // sum_sin += amp * sin_.eval_periodic(k * eta);
     }
 
     const double b_zeta = A_ * sum_cos;

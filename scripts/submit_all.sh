@@ -3,7 +3,7 @@
 MODE="Segmented"
 DEFECT="0"
 # OUT_DIR="${MODE}_def_${DEFECT}"
-OUT_DIR="${MODE}_LUT_def_${DEFECT}"
+OUT_DIR="${MODE}_def_${DEFECT}"
 
 echo "--------------------------------------------------"
 echo " Launching UCN Production Pipeline"
